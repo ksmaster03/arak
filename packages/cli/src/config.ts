@@ -8,6 +8,54 @@ export interface ArakConfig {
   sources: {
     prisma: string[];
   };
+  scan: {
+    /**
+     * ไฟล์ที่ `arak scan` ไม่ต้องดู
+     *
+     * จำเป็นจริง ๆ ไม่ใช่ของแถม — ทุกโปรเจกต์มีไฟล์ที่ตั้งใจให้มีข้อมูลรูปร่างเหมือนของจริง
+     * อย่างเทสต์ของตัวตรวจเอง ถ้าสั่งข้ามไม่ได้ ด่าน CI จะแดงตลอดกาลแล้วคนก็ปิดทิ้ง
+     */
+    ignore: string[];
+  };
+}
+
+/** แปลง glob แบบง่ายเป็น regexp — รองรับ `*` `**` และ `?` */
+export function globToRegExp(pattern: string): RegExp {
+  let out = "";
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i] ?? "";
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        // `**/` กินไดเรกทอรีกี่ชั้นก็ได้ รวมถึงศูนย์ชั้น
+        if (pattern[i + 2] === "/") {
+          out += "(?:.*/)?";
+          i += 2;
+        } else {
+          out += ".*";
+          i += 1;
+        }
+      } else {
+        out += "[^/]*";
+      }
+      continue;
+    }
+    if (ch === "?") {
+      out += "[^/]";
+      continue;
+    }
+    out += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${out}$`);
+}
+
+/** พาธนี้ตรงกับรูปแบบไหนในลิสต์หรือไม่ */
+export function matchesAny(path: string, patterns: string[]): boolean {
+  return patterns.some((pattern) => {
+    if (!/[*?]/.test(pattern)) {
+      return path === pattern || path.startsWith(`${pattern.replace(/\/$/, "")}/`);
+    }
+    return globToRegExp(pattern).test(path);
+  });
 }
 
 export const CONFIG_FILE = "arak.config.yaml";
@@ -33,7 +81,7 @@ const SKIP_DIRS = new Set([
 const MAX_DEPTH = 6;
 
 export function defaultConfig(prismaFiles: string[]): ArakConfig {
-  return { catalog: DEFAULT_CATALOG, sources: { prisma: prismaFiles } };
+  return { catalog: DEFAULT_CATALOG, sources: { prisma: prismaFiles }, scan: { ignore: [] } };
 }
 
 export function loadConfig(root: string): ArakConfig {
@@ -49,10 +97,12 @@ export function loadConfig(root: string): ArakConfig {
   const obj = (raw ?? {}) as Record<string, unknown>;
   const sources = (obj["sources"] ?? {}) as Record<string, unknown>;
   const prisma = Array.isArray(sources["prisma"]) ? sources["prisma"].map(String) : [];
+  const scan = (obj["scan"] ?? {}) as Record<string, unknown>;
 
   return {
     catalog: typeof obj["catalog"] === "string" ? obj["catalog"] : DEFAULT_CATALOG,
     sources: { prisma: prisma.length > 0 ? prisma : discoverPrismaSchemas(root) },
+    scan: { ignore: Array.isArray(scan["ignore"]) ? scan["ignore"].map(String) : [] },
   };
 }
 
@@ -112,5 +162,12 @@ export function serializeConfig(config: ArakConfig): string {
   } else {
     for (const file of config.sources.prisma) lines.push(`    - ${file}`);
   }
+  lines.push(
+    "",
+    "# ไฟล์ที่ arak scan ไม่ต้องดู เช่นเทสต์ที่ตั้งใจใส่ข้อมูลรูปร่างเหมือนของจริง",
+    "scan:",
+    "  ignore:",
+    "    []",
+  );
   return `${lines.join("\n")}\n`;
 }

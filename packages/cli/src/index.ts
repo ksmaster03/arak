@@ -19,6 +19,7 @@ import {
   defaultConfig,
   discoverPrismaSchemas,
   loadConfig,
+  matchesAny,
   serializeConfig,
   type ArakConfig,
 } from "./config.js";
@@ -36,6 +37,8 @@ interface Flags {
   minConfidence: number;
   /** พาธที่ระบุมาตรง ๆ สำหรับคำสั่ง scan */
   paths: string[];
+  /** รูปแบบไฟล์ที่ scan ต้องข้าม เพิ่มจากที่ตั้งไว้ในไฟล์ตั้งค่า */
+  ignore: string[];
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -47,6 +50,7 @@ function parseFlags(argv: string[]): Flags {
     heuristic: true,
     minConfidence: 0.7,
     paths: [],
+    ignore: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -70,6 +74,13 @@ function parseFlags(argv: string[]): Flags {
       case "--no-heuristic":
         flags.heuristic = false;
         break;
+      case "--ignore": {
+        const value = argv[i + 1];
+        if (value === undefined) fail("--ignore ต้องตามด้วยรูปแบบพาธ");
+        flags.ignore.push(value);
+        i += 1;
+        break;
+      }
       case "--min-confidence": {
         const value = Number(argv[i + 1]);
         if (!Number.isFinite(value) || value < 0 || value > 1) {
@@ -106,6 +117,7 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
   --check              ใช้กับ sync — ไม่เขียนไฟล์ ถ้ามีอะไรต้องเปลี่ยนจะคืนค่า 1
   --no-heuristic       ให้แคตตาล็อกมีเฉพาะสิ่งที่คนมาร์กเอง ไม่ต้องเดา
   --min-confidence <n> ใช้กับ scan — เกณฑ์ความเชื่อมั่น 0 ถึง 1 (ค่าเริ่มต้น 0.7)
+  --ignore <glob>      ใช้กับ scan — ข้ามไฟล์ที่ตรงรูปแบบ ใส่ซ้ำได้
   --json               พิมพ์ผลเป็น JSON
   --force              ใช้กับ init — เขียนทับไฟล์เดิม
 
@@ -366,7 +378,10 @@ function report(
 }
 
 function commandScan(flags: Flags): void {
-  const files = collectFiles(flags.root, flags.paths);
+  const ignore = [...loadConfig(flags.root).scan.ignore, ...flags.ignore];
+  const all = collectFiles(flags.root, flags.paths);
+  const files = all.filter((file) => !matchesAny(file, ignore));
+  const ignored = all.length - files.length;
   const { findings, scanned, skipped } = scanFiles(flags.root, files, flags.minConfidence);
 
   if (flags.json) {
@@ -374,6 +389,7 @@ function commandScan(flags: Flags): void {
       `${JSON.stringify(
         {
           scanned,
+          ignored,
           skipped,
           findings: findings.map((f) => ({
             file: f.file,
