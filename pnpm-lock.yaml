@@ -23,6 +23,9 @@ importers:
       '@arak/core':
         specifier: workspace:*
         version: link:../core
+      '@arak/detect-th':
+        specifier: workspace:*
+        version: link:../detect-th
       '@arak/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -35,6 +38,8 @@ importers:
       yaml:
         specifier: ^2.6.1
         version: 2.9.0
+
+  packages/detect-th: {}
 
   packages/prisma:
     dependencies:

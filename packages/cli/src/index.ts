@@ -22,6 +22,7 @@ import {
   serializeConfig,
   type ArakConfig,
 } from "./config.js";
+import { collectFiles, scanFiles } from "./scan.js";
 import { blue, bold, capped, dim, green, heading, pad, red, yellow } from "./ui.js";
 
 const VERSION = "0.1.0";
@@ -32,6 +33,9 @@ interface Flags {
   force: boolean;
   json: boolean;
   heuristic: boolean;
+  minConfidence: number;
+  /** พาธที่ระบุมาตรง ๆ สำหรับคำสั่ง scan */
+  paths: string[];
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -41,6 +45,8 @@ function parseFlags(argv: string[]): Flags {
     force: false,
     json: false,
     heuristic: true,
+    minConfidence: 0.7,
+    paths: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -64,8 +70,19 @@ function parseFlags(argv: string[]): Flags {
       case "--no-heuristic":
         flags.heuristic = false;
         break;
+      case "--min-confidence": {
+        const value = Number(argv[i + 1]);
+        if (!Number.isFinite(value) || value < 0 || value > 1) {
+          fail("--min-confidence ต้องเป็นตัวเลขระหว่าง 0 ถึง 1");
+        }
+        flags.minConfidence = value;
+        i += 1;
+        break;
+      }
       default:
-        if (arg !== undefined && arg.startsWith("-")) fail(`ไม่รู้จักตัวเลือก ${arg}`);
+        if (arg === undefined) break;
+        if (arg.startsWith("-")) fail(`ไม่รู้จักตัวเลือก ${arg}`);
+        flags.paths.push(arg);
     }
   }
   return flags;
@@ -82,18 +99,23 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
   arak init            สร้าง ${CONFIG_FILE} และแคตตาล็อกตั้งต้น
   arak sync            อ่านซอร์ส แล้วปรับแคตตาล็อกให้ตรง
   arak status          รายงานสถานะโดยไม่แก้ไฟล์ (ใช้เป็นด่านใน CI)
+  arak scan [paths]    หาข้อมูลส่วนบุคคลของจริงที่ปนอยู่ในไฟล์ เช่น seed หรือ fixture
 
 ตัวเลือก
   --root <path>        รากโปรเจกต์ (ค่าเริ่มต้นคือโฟลเดอร์ปัจจุบัน)
   --check              ใช้กับ sync — ไม่เขียนไฟล์ ถ้ามีอะไรต้องเปลี่ยนจะคืนค่า 1
   --no-heuristic       ให้แคตตาล็อกมีเฉพาะสิ่งที่คนมาร์กเอง ไม่ต้องเดา
+  --min-confidence <n> ใช้กับ scan — เกณฑ์ความเชื่อมั่น 0 ถึง 1 (ค่าเริ่มต้น 0.7)
   --json               พิมพ์ผลเป็น JSON
   --force              ใช้กับ init — เขียนทับไฟล์เดิม
 
 รหัสจบการทำงาน
   0  ผ่าน
-  1  มีฟิลด์ที่ยังไม่ได้ตัดสิน หรือมีข้อผิดพลาดในแคตตาล็อก
+  1  มีฟิลด์ที่ยังไม่ได้ตัดสิน มีข้อผิดพลาดในแคตตาล็อก หรือ scan เจอข้อมูลจริง
   2  เรียกใช้ผิด หรืออ่านไฟล์ไม่ได้
+
+หมายเหตุ  scan จะไม่พิมพ์ค่าจริงออกมาเด็ดขาด แสดงเฉพาะค่าที่ปิดบังแล้ว
+          เพราะ log ของ CI อยู่นานกว่าไฟล์ที่ถูกสแกนเสียอีก
 `;
 
 function main(): void {
@@ -108,6 +130,8 @@ function main(): void {
       return commandSync(flags, false);
     case "status":
       return commandSync(flags, true);
+    case "scan":
+      return commandScan(flags);
     case "help":
     case "--help":
     case "-h":
@@ -339,6 +363,66 @@ function report(
   } else {
     out.write(`${dim("ไม่มีอะไรเปลี่ยน")}\n`);
   }
+}
+
+function commandScan(flags: Flags): void {
+  const files = collectFiles(flags.root, flags.paths);
+  const { findings, scanned, skipped } = scanFiles(flags.root, files, flags.minConfidence);
+
+  if (flags.json) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          scanned,
+          skipped,
+          findings: findings.map((f) => ({
+            file: f.file,
+            line: f.line,
+            column: f.column,
+            type: f.match.type,
+            category: f.match.category,
+            confidence: f.match.confidence,
+            preview: f.preview,
+          })),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    process.exit(findings.length > 0 ? 1 : 0);
+  }
+
+  const out = process.stdout;
+  out.write(`${dim("สแกน")} ${scanned} ไฟล์  ${dim("เกณฑ์ความเชื่อมั่น")} ${flags.minConfidence}\n`);
+
+  for (const file of skipped) {
+    out.write(`${yellow("อ่านไม่ได้")} ${file}\n`);
+  }
+
+  if (findings.length === 0) {
+    out.write(`\n${green("ไม่พบข้อมูลส่วนบุคคลในไฟล์ที่สแกน")}\n`);
+    process.exit(0);
+  }
+
+  const byType = new Map<string, number>();
+  for (const f of findings) byType.set(f.match.type, (byType.get(f.match.type) ?? 0) + 1);
+
+  out.write(heading("ที่พบ"));
+  out.write("\n");
+  for (const line of capped(findings, 30, (f) => {
+    const where = `${f.file}:${f.line}:${f.column}`;
+    return `  ${red(pad(f.match.type, 20))} ${pad(f.preview, 16)} ${dim(where)}`;
+  })) {
+    out.write(`${line}\n`);
+  }
+
+  out.write(heading("สรุป"));
+  out.write("\n");
+  for (const [type, count] of [...byType].sort((a, b) => b[1] - a[1])) {
+    out.write(`  ${pad(type, 22)} ${String(count)}\n`);
+  }
+  out.write(`\n${red("พบข้อมูลจริงในไฟล์")} ${findings.length} จุด — ย้ายออกหรือแทนด้วยข้อมูลสมมติ\n`);
+  process.exit(1);
 }
 
 function formatProblem(problem: Problem, color: (s: string) => string): string {

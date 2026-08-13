@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@arak/core": "workspace:*",
+    "@arak/detect-th": "workspace:*",
     "@arak/prisma": "workspace:*",
     "yaml": "^2.6.1"
   }
