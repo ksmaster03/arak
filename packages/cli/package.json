@@ -1,0 +1,19 @@
+{
+  "name": "@arak/cli",
+  "version": "0.1.0",
+  "description": "The arak command line — sync the personal-data catalog with the code and gate CI on it",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "arak": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@arak/core": "workspace:*",
+    "@arak/prisma": "workspace:*",
+    "yaml": "^2.6.1"
+  }
+}

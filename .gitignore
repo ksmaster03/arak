@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.DS_Store
+Thumbs.db
+
+# scratch space for trying the CLI against other repos
+.scratch/

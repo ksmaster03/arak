@@ -1,0 +1,27 @@
+{
+  "name": "arak",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mark personal data while the code is being written — PDPA data inventory and RoPA for TypeScript + Prisma projects",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/**\" run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r --filter \"./packages/**\" exec tsc --noEmit -p tsconfig.json",
+    "arak": "node packages/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
