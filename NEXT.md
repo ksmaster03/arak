@@ -1,6 +1,6 @@
 # 📍 จุดกลับมาทำต่อ
 
-สถานะ ณ 13 ส.ค. 2569 · `64f2a5a` · **139 เทสต์ผ่าน · typecheck สะอาด · ยังไม่ push ขึ้น remote**
+สถานะ ณ 13 ส.ค. 2569 · `771dc27` · **139 เทสต์ผ่าน · typecheck สะอาด · ยังไม่ push ขึ้น remote**
 
 ## ทำอะไรไปแล้ว
 
@@ -9,7 +9,7 @@
 | `packages/core` | โครงแคตตาล็อกตาม ม.39 · กฎการชี้ขาดสามข้อ · อ่าน/เขียน YAML โดยคอมเมนต์ของคนไม่หาย · ตัวเดาจากชื่อฟิลด์ 35 กฎ |
 | `packages/prisma` | ตัวอ่าน `.prisma` ที่ให้เลขบรรทัดจริง · แยกกุญแจนอกออกจากตัวข้อมูล · อ่าน `@pii` / `@not-pii` |
 | `packages/detect-th` | ตัวตรวจค่าจริงของไทย 12 ชนิด · `Redactor` ที่ให้ตัวแทนคงที่และแปลงกลับได้ · ไม่มี dependency |
-| `packages/cli` | `arak init` / `sync` / `status` / `scan` |
+| `packages/cli` | `arak init` / `sync` / `status` / `scan` (มี `--ignore`) |
 
 ทดสอบกับสคีมาจริงสามชุดแล้ว — DockSync 27 ฟิลด์ · FixFlow 27 · SCHEM 43
 และสแกน DockSync API เจอข้อมูลใน seed 129 จุด
