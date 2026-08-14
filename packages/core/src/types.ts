@@ -126,7 +126,16 @@ export interface FieldSource {
   type?: string;
 }
 
-export type FieldStatus = "marked" | "unmarked" | "not-pii";
+/**
+ * `unmarked` ยังไม่มีใครตัดสิน และเป็นของใหม่ — ฮุกจะเตือนในเทิร์น และ CI ตก
+ * `deferred` รับรู้แล้วว่ายังไม่ตัดสิน แต่ตั้งใจพักไว้ — ไม่เตือน CI ผ่าน แต่ยังนับเป็นหนี้
+ * `marked`   ตัดสินแล้วว่าเป็นข้อมูลส่วนบุคคล
+ * `not-pii`  ตัดสินแล้วว่าไม่ใช่ พร้อมเหตุผล
+ *
+ * `deferred` มีอยู่เพราะวันที่ติดตั้งกับ repo ที่เขียนมาแล้วสองปี จะเจอฟิลด์ค้างหลายสิบตัวพร้อมกัน
+ * ถ้าเตือนทั้งหมดตั้งแต่วันแรก คนจะปิดเครื่องมือทิ้งก่อนได้ใช้ประโยชน์
+ */
+export type FieldStatus = "marked" | "unmarked" | "deferred" | "not-pii";
 
 /** หนึ่งฟิลด์ในแคตตาล็อก */
 export interface CatalogField {
@@ -151,6 +160,8 @@ export interface CatalogField {
   orphaned?: boolean;
   /** วันที่พบครั้งแรก รูปแบบ YYYY-MM-DD */
   firstSeen?: string;
+  /** วันที่ถูกยกเป็นหนี้เก่า มีเฉพาะฟิลด์ที่ status เป็น deferred */
+  deferredOn?: string;
 }
 
 /** วัตถุประสงค์การประมวลผลหนึ่งรายการ — ม.39(2) */

@@ -7,9 +7,20 @@
   "bin": {
     "arak": "./dist/index.js"
   },
+  "exports": {
+    "./project": {
+      "types": "./dist/project.d.ts",
+      "default": "./dist/project.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    }
+  },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@arak/core": "workspace:*",

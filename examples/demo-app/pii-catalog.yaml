@@ -1,0 +1,249 @@
+# แคตตาล็อกข้อมูลส่วนบุคคล (Arak)
+#
+# ไฟล์นี้คือแหล่งความจริงเพียงที่เดียวว่าระบบนี้เก็บข้อมูลส่วนบุคคลอะไรบ้าง
+# เพื่ออะไร ด้วยฐานทางกฎหมายใด และเก็บไว้นานเท่าไร
+# เนื้อหาที่นี่คือสิ่งที่ใช้ออกบันทึกรายการกิจกรรมการประมวลผล (RoPA) ตามมาตรา 39
+#
+# ส่วน controller / purposes / access / securityMeasures เป็นของคนล้วน ๆ
+# เครื่องมือจะไม่แก้ให้ และคอมเมนต์ที่เขียนไว้จะไม่หาย
+# ส่วน fields เครื่องมือดูแลให้ตรงกับซอร์สเสมอ แต่จะไม่ลบอะไรทิ้งเอง
+
+version: 1
+
+controller:
+  name: บริษัทตัวอย่าง ส่งไว จำกัด
+  contact: dpo@example.co.th
+
+purposes:
+  - key: delivery
+    label: รับคำสั่งซื้อและจัดส่งของถึงผู้รับ
+    legalBasis: contract
+    retention: P2Y
+    description: จำเป็นต่อการปฏิบัติตามสัญญาซื้อขายกับลูกค้า
+
+  - key: tax_invoice
+    label: ออกใบกำกับภาษีและเก็บเอกสารตามกฎหมายบัญชี
+    legalBasis: legal_obligation
+    retention: P5Y
+    recipients:
+      - กรมสรรพากร
+
+  - key: operations
+    label: จัดคนขับและติดตามสถานะงานส่ง
+    legalBasis: contract
+    retention: P2Y
+
+  - key: security_log
+    label: บันทึกการเข้าถึงระบบเพื่อสอบสวนเหตุผิดปกติ
+    legalBasis: legitimate_interest
+    retention: P1Y
+
+access:
+  requestChannel: dpo@example.co.th
+  rightsUrl: https://example.co.th/privacy
+  whoCanAccess:
+    - ทีมปฏิบัติการ เห็นเฉพาะงานที่ตัวเองรับผิดชอบ
+    - ผู้ดูแลระบบ เห็นทั้งหมด และทุกครั้งที่เข้าถึงถูกบันทึก
+  refusalGrounds:
+    - คำขอที่ขัดกับหน้าที่ตามกฎหมายเรื่องการเก็บเอกสารภาษี
+
+securityMeasures:
+  - เข้ารหัสระหว่างส่ง (TLS) และเข้ารหัสข้อมูลที่พักอยู่
+  - จำกัดสิทธิ์เข้าถึงตามหน้าที่ และบันทึกการเข้าถึงทุกครั้ง
+  - ลบข้อมูลอัตโนมัติเมื่อพ้นระยะเวลาเก็บของแต่ละวัตถุประสงค์
+
+fields:
+  - id: prisma:AuditLog.actorEmail
+    status: marked
+    category: contact
+    purposes:
+      - security_log
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 94
+      container: AuditLog
+      field: actorEmail
+      type: String
+  - id: prisma:AuditLog.ip
+    status: marked
+    category: device
+    purposes:
+      - security_log
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 97
+      container: AuditLog
+      field: ip
+      type: String
+  - id: prisma:AuditLog.userAgent
+    status: marked
+    category: device
+    purposes:
+      - security_log
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 100
+      container: AuditLog
+      field: userAgent
+      type: String
+  - id: prisma:Customer.address
+    status: marked
+    category: contact
+    purposes:
+      - delivery
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 32
+      container: Customer
+      field: address
+      type: String
+  - id: prisma:Customer.email
+    status: marked
+    category: contact
+    purposes:
+      - delivery
+      - tax_invoice
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 22
+      container: Customer
+      field: email
+      type: String
+  - id: prisma:Customer.name
+    status: marked
+    category: identity
+    purposes:
+      - delivery
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 19
+      container: Customer
+      field: name
+      type: String
+  - id: prisma:Customer.phone
+    status: marked
+    category: contact
+    purposes:
+      - delivery
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 25
+      container: Customer
+      field: phone
+      type: String
+  - id: prisma:Customer.refCode
+    status: not-pii
+    reason: รหัสอ้างอิงภายใน สร้างแบบสุ่ม ไม่ผูกกับตัวบุคคล
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 35
+      container: Customer
+      field: refCode
+      type: String
+  - id: prisma:Customer.taxId
+    status: marked
+    category: government_id
+    purposes:
+      - tax_invoice
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 29
+      container: Customer
+      field: taxId
+      type: String
+  - id: prisma:Driver.fullName
+    status: marked
+    category: identity
+    purposes:
+      - operations
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 74
+      container: Driver
+      field: fullName
+      type: String
+  - id: prisma:Driver.licencePlate
+    status: marked
+    category: vehicle
+    purposes:
+      - operations
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 80
+      container: Driver
+      field: licencePlate
+      type: String
+  - id: prisma:Driver.nationalId
+    status: marked
+    category: government_id
+    purposes:
+      - operations
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 84
+      container: Driver
+      field: nationalId
+      type: String
+  - id: prisma:Driver.phone
+    status: marked
+    category: contact
+    purposes:
+      - operations
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 77
+      container: Driver
+      field: phone
+      type: String
+  - id: prisma:Order.deliveryAddress
+    status: marked
+    category: contact
+    purposes:
+      - delivery
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 52
+      container: Order
+      field: deliveryAddress
+      type: String
+  - id: prisma:Order.deliveryPhone
+    status: marked
+    category: contact
+    purposes:
+      - delivery
+    firstSeen: 2026-08-14
+    source:
+      kind: prisma
+      file: prisma/schema.prisma
+      line: 49
+      container: Order
+      field: deliveryPhone
+      type: String

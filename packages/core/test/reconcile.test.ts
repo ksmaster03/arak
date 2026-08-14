@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconcile, summarize } from "../src/reconcile.js";
+import { applyBaseline, reconcile, summarize } from "../src/reconcile.js";
 import type { Catalog, CatalogField, PiiAnnotation, SourceField } from "../src/types.js";
 
 const TODAY = "2026-08-13";
@@ -231,6 +231,80 @@ describe("reconcile", () => {
     const second = reconcile(first.catalog, [source("User", "email")], options);
     expect(second.catalog.fields).toEqual(first.catalog.fields);
     expect(second.changes).toEqual([]);
+  });
+});
+
+describe("applyBaseline", () => {
+  it("ยกเฉพาะฟิลด์ที่ยังไม่ตัดสินไปเป็นหนี้เก่า", () => {
+    const before = catalog([
+      { id: "prisma:User.email", status: "unmarked", source: source("User", "email").source },
+      {
+        id: "prisma:User.phone",
+        status: "marked",
+        category: "contact",
+        purposes: ["account"],
+        source: source("User", "phone").source,
+      },
+      {
+        id: "prisma:Order.ref",
+        status: "not-pii",
+        reason: "รหัสภายใน",
+        source: source("Order", "ref").source,
+      },
+    ]);
+
+    const { catalog: after, moved } = applyBaseline(before, TODAY);
+    expect(moved).toEqual(["prisma:User.email"]);
+    expect(after.fields[0]).toMatchObject({ status: "deferred", deferredOn: TODAY });
+    expect(after.fields[1]?.status).toBe("marked");
+    expect(after.fields[2]?.status).toBe("not-pii");
+  });
+
+  it("ไม่ยกฟิลด์ที่หายไปจากซอร์สแล้ว", () => {
+    const before = catalog([
+      {
+        id: "prisma:User.fax",
+        status: "unmarked",
+        orphaned: true,
+        source: source("User", "fax").source,
+      },
+    ]);
+    expect(applyBaseline(before, TODAY).moved).toEqual([]);
+  });
+
+  it("ฟิลด์ใหม่ที่เขียนหลังตั้งเส้นฐานยังขึ้นเป็น unmarked ตามปกติ", () => {
+    const baseline = applyBaseline(
+      reconcile(catalog([]), [source("User", "email")], options).catalog,
+      TODAY,
+    ).catalog;
+
+    const after = reconcile(
+      baseline,
+      [source("User", "email"), source("Customer", "phone")],
+      options,
+    );
+
+    const byId = new Map(after.catalog.fields.map((f) => [f.id, f]));
+    expect(byId.get("prisma:User.email")?.status).toBe("deferred");
+    expect(byId.get("prisma:Customer.phone")?.status).toBe("unmarked");
+    expect(summarize(after.catalog)).toMatchObject({ deferred: 1, unmarked: 1 });
+  });
+
+  it("มาร์กฟิลด์ที่เป็นหนี้เก่าแล้ว เครื่องหมายหนี้ต้องหายไป", () => {
+    const baseline = applyBaseline(
+      reconcile(catalog([]), [source("User", "email")], options).catalog,
+      TODAY,
+    ).catalog;
+
+    const ann: PiiAnnotation = {
+      kind: "pii",
+      category: "contact",
+      purposes: ["account"],
+      raw: "@pii(...)",
+    };
+    const after = reconcile(baseline, [source("User", "email", ann)], options);
+    expect(after.catalog.fields[0]?.status).toBe("marked");
+    expect(after.catalog.fields[0]?.deferredOn).toBeUndefined();
   });
 });
 

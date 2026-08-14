@@ -1,0 +1,104 @@
+// สคีมาสมมติของแอปส่งของ ใช้เป็นสนามทดสอบของ Arak
+// ข้อมูลทั้งหมดในนี้แต่งขึ้น ไม่มีของลูกค้าจริง
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ลูกค้าที่สั่งของ
+model Customer {
+  id String @id @default(cuid())
+
+  /// ชื่อที่ใช้เรียกบนใบส่งของ
+  /// @pii(category=identity, purposes=delivery)
+  name String
+
+  /// @pii(category=contact, purposes=delivery;tax_invoice)
+  email String @unique
+
+  /// @pii(category=contact, purposes=delivery)
+  phone String?
+
+  /// เลขประจำตัวผู้เสียภาษี ใช้ออกใบกำกับตามที่กฎหมายกำหนด
+  /// @pii(category=government_id, purposes=tax_invoice)
+  taxId String?
+
+  /// @pii(category=contact, purposes=delivery)
+  address String?
+
+  /// @not-pii(reason="รหัสอ้างอิงภายใน สร้างแบบสุ่ม ไม่ผูกกับตัวบุคคล")
+  refCode String @unique
+
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+/// คำสั่งซื้อหนึ่งใบ
+model Order {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  /// ผู้รับปลายทางอาจไม่ใช่คนสั่ง
+  /// @pii(category=contact, purposes=delivery)
+  deliveryPhone String?
+
+  /// @pii(category=contact, purposes=delivery)
+  deliveryAddress String
+
+  totalSatang Int
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  driverId String?
+  driver   Driver? @relation(fields: [driverId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  PICKED
+  DELIVERED
+  CANCELLED
+}
+
+/// คนขับรถส่งของ
+model Driver {
+  id String @id @default(cuid())
+
+  /// @pii(category=identity, purposes=operations)
+  fullName String
+
+  /// @pii(category=contact, purposes=operations)
+  phone String
+
+  /// @pii(category=vehicle, purposes=operations)
+  licencePlate String
+
+  /// เก็บไว้ยืนยันตัวตนตอนรับงาน
+  /// @pii(category=government_id, purposes=operations)
+  nationalId String?
+
+  orders Order[]
+}
+
+/// บันทึกการเข้าถึงระบบ
+model AuditLog {
+  id String @id @default(cuid())
+
+  /// @pii(category=contact, purposes=security_log)
+  actorEmail String
+
+  /// @pii(category=device, purposes=security_log)
+  ip String?
+
+  /// @pii(category=device, purposes=security_log)
+  userAgent String?
+
+  action    String
+  createdAt DateTime @default(now())
+}

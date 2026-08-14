@@ -1,0 +1,13 @@
+{
+  "name": "@arak/plugin",
+  "version": "0.1.0",
+  "description": "Claude Code plugin — asks for a PDPA marking the moment a personal-data field is written",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "files": [".claude-plugin", "hooks"],
+  "dependencies": {
+    "@arak/cli": "workspace:*",
+    "@arak/core": "workspace:*"
+  }
+}

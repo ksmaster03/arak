@@ -43,6 +43,7 @@ const FIELD_KEYS: (keyof CatalogField)[] = [
   "detectedBy",
   "orphaned",
   "firstSeen",
+  "deferredOn",
   "source",
 ];
 

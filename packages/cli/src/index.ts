@@ -2,18 +2,14 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import {
-  emptyCatalog,
+  applyBaseline,
   isSensitiveCategory,
-  parseCatalog,
-  reconcile,
   serializeCatalog,
   starterCatalog,
   summarize,
-  type Catalog,
   type CatalogField,
   type Problem,
 } from "@arak/core";
-import { readPrismaSchemas, SOURCE_KIND, type SchemaInput } from "@arak/prisma";
 import {
   CONFIG_FILE,
   defaultConfig,
@@ -21,8 +17,8 @@ import {
   loadConfig,
   matchesAny,
   serializeConfig,
-  type ArakConfig,
 } from "./config.js";
+import { loadProject, ProjectError, today, type ProjectRun } from "./project.js";
 import { collectFiles, scanFiles } from "./scan.js";
 import { blue, bold, capped, dim, green, heading, pad, red, yellow } from "./ui.js";
 
@@ -39,6 +35,8 @@ interface Flags {
   paths: string[];
   /** รูปแบบไฟล์ที่ scan ต้องข้าม เพิ่มจากที่ตั้งไว้ในไฟล์ตั้งค่า */
   ignore: string[];
+  /** ให้ status นับหนี้เก่าเป็นความล้มเหลวด้วย */
+  strict: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -51,6 +49,7 @@ function parseFlags(argv: string[]): Flags {
     minConfidence: 0.7,
     paths: [],
     ignore: [],
+    strict: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -73,6 +72,9 @@ function parseFlags(argv: string[]): Flags {
         break;
       case "--no-heuristic":
         flags.heuristic = false;
+        break;
+      case "--strict":
+        flags.strict = true;
         break;
       case "--ignore": {
         const value = argv[i + 1];
@@ -110,12 +112,14 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
   arak init            สร้าง ${CONFIG_FILE} และแคตตาล็อกตั้งต้น
   arak sync            อ่านซอร์ส แล้วปรับแคตตาล็อกให้ตรง
   arak status          รายงานสถานะโดยไม่แก้ไฟล์ (ใช้เป็นด่านใน CI)
+  arak baseline        ยกฟิลด์ที่ยังไม่ตัดสินทั้งหมดไปเป็นหนี้เก่า เพื่อเริ่มนับจากศูนย์
   arak scan [paths]    หาข้อมูลส่วนบุคคลของจริงที่ปนอยู่ในไฟล์ เช่น seed หรือ fixture
 
 ตัวเลือก
   --root <path>        รากโปรเจกต์ (ค่าเริ่มต้นคือโฟลเดอร์ปัจจุบัน)
   --check              ใช้กับ sync — ไม่เขียนไฟล์ ถ้ามีอะไรต้องเปลี่ยนจะคืนค่า 1
   --no-heuristic       ให้แคตตาล็อกมีเฉพาะสิ่งที่คนมาร์กเอง ไม่ต้องเดา
+  --strict             ใช้กับ status — ให้หนี้เก่าทำให้ตกด้วย
   --min-confidence <n> ใช้กับ scan — เกณฑ์ความเชื่อมั่น 0 ถึง 1 (ค่าเริ่มต้น 0.7)
   --ignore <glob>      ใช้กับ scan — ข้ามไฟล์ที่ตรงรูปแบบ ใส่ซ้ำได้
   --json               พิมพ์ผลเป็น JSON
@@ -144,6 +148,8 @@ function main(): void {
       return commandSync(flags, true);
     case "scan":
       return commandScan(flags);
+    case "baseline":
+      return commandBaseline(flags);
     case "help":
     case "--help":
     case "-h":
@@ -190,63 +196,42 @@ function commandInit(flags: Flags): void {
   }
 }
 
-interface RunResult {
-  catalog: Catalog;
-  problems: Problem[];
-  changes: ReturnType<typeof reconcile>["changes"];
-  nextText: string;
-  previousText: string | undefined;
-  catalogPath: string;
-  config: ArakConfig;
+function run(flags: Flags): ProjectRun {
+  try {
+    return loadProject(flags.root, { today: today(), useHeuristic: flags.heuristic });
+  } catch (error) {
+    if (error instanceof ProjectError) {
+      fail(`${error.message} — ระบุพาธใน ${CONFIG_FILE} หรือรัน arak init ก่อน`);
+    }
+    throw error;
+  }
 }
 
-function run(flags: Flags): RunResult {
-  const config = loadConfig(flags.root);
-  const catalogPath = join(flags.root, config.catalog);
+function commandBaseline(flags: Flags): void {
+  const result = run(flags);
+  const { catalog, moved } = applyBaseline(result.catalog, new Date().toISOString().slice(0, 10));
+  const text = serializeCatalog(catalog, result.previousText);
+  writeFileSync(result.catalogPath, text, "utf8");
 
-  if (config.sources.prisma.length === 0) {
-    fail(`ไม่พบสคีมา Prisma เลย — ระบุพาธใน ${CONFIG_FILE} หรือรัน arak init ก่อน`);
+  const out = process.stdout;
+  if (moved.length === 0) {
+    out.write(`${dim("ไม่มีฟิลด์ที่ต้องยกไปเป็นหนี้เก่า")}
+`);
+    process.exit(0);
   }
 
-  const inputs: SchemaInput[] = [];
-  for (const file of config.sources.prisma) {
-    const full = join(flags.root, file);
-    try {
-      inputs.push({ file, text: readFileSync(full, "utf8") });
-    } catch {
-      fail(`อ่านไฟล์ไม่ได้: ${file}`);
-    }
-  }
-
-  const read = readPrismaSchemas(inputs);
-
-  let previousText: string | undefined;
-  let existing: Catalog = emptyCatalog();
-  const problems: Problem[] = [...read.problems];
-
-  if (existsSync(catalogPath)) {
-    previousText = readFileSync(catalogPath, "utf8");
-    const loaded = parseCatalog(previousText);
-    existing = loaded.catalog;
-    problems.push(...loaded.problems);
-  }
-
-  const result = reconcile(existing, read.fields, {
-    today: new Date().toISOString().slice(0, 10),
-    scannedKinds: [SOURCE_KIND],
-    useHeuristic: flags.heuristic,
-  });
-  problems.push(...result.problems);
-
-  return {
-    catalog: result.catalog,
-    problems,
-    changes: result.changes,
-    nextText: serializeCatalog(result.catalog, previousText),
-    previousText,
-    catalogPath,
-    config,
-  };
+  out.write(`${green("ยกไปเป็นหนี้เก่าแล้ว")} ${moved.length} ฟิลด์
+`);
+  for (const line of capped(moved, 10, (id) => `  ${dim(id)}`)) out.write(`${line}
+`);
+  out.write(
+    `
+ตั้งแต่นี้ไป ฮุกจะเตือนเฉพาะฟิลด์ที่เขียนใหม่
+` +
+      `${dim("ของเก่ายังอยู่ในแคตตาล็อกและยังนับเป็นหนี้ — ดูด้วย arak status")}
+`,
+  );
+  process.exit(0);
 }
 
 function commandSync(flags: Flags, readOnly: boolean): void {
@@ -276,12 +261,13 @@ function commandSync(flags: Flags, readOnly: boolean): void {
 
   if (errors.length > 0) process.exit(1);
   if (readOnly && summary.unmarked > 0) process.exit(1);
+  if (readOnly && flags.strict && summary.deferred > 0) process.exit(1);
   if (flags.check && changed) process.exit(1);
   process.exit(0);
 }
 
 function report(
-  result: RunResult,
+  result: ProjectRun,
   summary: ReturnType<typeof summarize>,
   errors: Problem[],
   warnings: Problem[],

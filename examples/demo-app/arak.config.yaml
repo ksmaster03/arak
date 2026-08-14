@@ -1,0 +1,15 @@
+# ตั้งค่า Arak
+#
+# catalog — ไฟล์แคตตาล็อกข้อมูลส่วนบุคคลของโปรเจกต์นี้
+# sources — บอกว่าให้ไปอ่านความจริงจากที่ไหนบ้าง
+
+catalog: pii-catalog.yaml
+
+sources:
+  prisma:
+    - prisma/schema.prisma
+
+# ไฟล์ที่ arak scan ไม่ต้องดู เช่นเทสต์ที่ตั้งใจใส่ข้อมูลรูปร่างเหมือนของจริง
+scan:
+  ignore:
+    []

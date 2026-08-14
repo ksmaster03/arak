@@ -11,6 +11,7 @@ export type ChangeKind =
   | "added"
   | "marked"
   | "unmarked"
+  | "deferred"
   | "not-pii"
   | "reclassified"
   | "orphaned"
@@ -166,6 +167,7 @@ function applyAnnotation(
 ): void {
   if (ann.kind === "not-pii") {
     next.status = "not-pii";
+    delete next.deferredOn;
     if (ann.reason !== undefined) next.reason = ann.reason;
     delete next.category;
     delete next.purposes;
@@ -186,6 +188,7 @@ function applyAnnotation(
 
   next.status = "marked";
   delete next.reason;
+  delete next.deferredOn;
   // ตัวเดาไม่มีน้ำหนักอีกแล้วเมื่อคนตัดสินด้วยมือ
   delete next.detectedBy;
   delete next.confidence;
@@ -257,7 +260,13 @@ function validateField(
 function recordDiff(prev: CatalogField, next: CatalogField, changes: FieldChange[]): void {
   if (prev.status !== next.status) {
     const kind: ChangeKind =
-      next.status === "marked" ? "marked" : next.status === "not-pii" ? "not-pii" : "unmarked";
+      next.status === "marked"
+        ? "marked"
+        : next.status === "not-pii"
+          ? "not-pii"
+          : next.status === "deferred"
+            ? "deferred"
+            : "unmarked";
     changes.push({ id: next.id, kind, detail: `${prev.status} → ${next.status}` });
     return;
   }
@@ -270,10 +279,35 @@ function recordDiff(prev: CatalogField, next: CatalogField, changes: FieldChange
   }
 }
 
+/**
+ * ยกฟิลด์ที่ยังไม่ตัดสินทั้งหมดไปเป็นหนี้เก่าที่รับรู้แล้ว
+ *
+ * ใช้ตอนติดตั้งกับโปรเจกต์ที่เขียนมานานแล้ว เพื่อให้เส้นเริ่มต้นเป็นศูนย์
+ * แล้วฮุกจะเตือนเฉพาะฟิลด์ที่เขียนใหม่หลังจากวันนี้
+ *
+ * ไม่ใช่การล้างหนี้ — ยอด deferred ยังโชว์ในรายงานทุกครั้ง และ `arak status --strict`
+ * ยังนับรวมได้เมื่อทีมพร้อมจะไล่เคลียร์
+ */
+export function applyBaseline(
+  catalog: Catalog,
+  today: string,
+): { catalog: Catalog; moved: string[] } {
+  const moved: string[] = [];
+  const fields = catalog.fields.map((field) => {
+    if (field.status !== "unmarked" || field.orphaned === true) return field;
+    moved.push(field.id);
+    return { ...field, status: "deferred" as const, deferredOn: today };
+  });
+  return { catalog: { ...catalog, fields }, moved };
+}
+
 export interface CatalogSummary {
   total: number;
   marked: number;
+  /** ของใหม่ที่ยังไม่ตัดสิน — ตัวเลขที่ CI ใช้ตัดสินว่าผ่านหรือไม่ */
   unmarked: number;
+  /** หนี้เก่าที่รับรู้แล้ว — ไม่ทำให้ CI ตก แต่ต้องเห็นว่ายังเหลือเท่าไร */
+  deferred: number;
   notPii: number;
   sensitive: number;
   orphaned: number;
@@ -284,6 +318,7 @@ export function summarize(catalog: Catalog): CatalogSummary {
     total: 0,
     marked: 0,
     unmarked: 0,
+    deferred: 0,
     notPii: 0,
     sensitive: 0,
     orphaned: 0,
@@ -293,6 +328,7 @@ export function summarize(catalog: Catalog): CatalogSummary {
     if (f.orphaned) summary.orphaned += 1;
     if (f.status === "marked") summary.marked += 1;
     else if (f.status === "unmarked") summary.unmarked += 1;
+    else if (f.status === "deferred") summary.deferred += 1;
     else summary.notPii += 1;
     if (f.status !== "not-pii" && isSensitiveCategory(f.category)) summary.sensitive += 1;
   }

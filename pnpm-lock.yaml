@@ -41,6 +41,15 @@ importers:
 
   packages/detect-th: {}
 
+  packages/plugin:
+    dependencies:
+      '@arak/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@arak/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/prisma:
     dependencies:
       '@arak/core':

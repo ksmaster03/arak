@@ -12,7 +12,7 @@
     "build": "pnpm -r --filter \"./packages/**\" run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "pnpm -r --filter \"./packages/**\" exec tsc --noEmit -p tsconfig.json",
+    "typecheck": "pnpm -r run typecheck",
     "arak": "node packages/cli/dist/index.js"
   },
   "devDependencies": {
