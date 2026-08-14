@@ -253,6 +253,8 @@ function writeFields(doc: Document, fields: CatalogField[]): void {
 
 function updateNode(doc: Document, node: YAMLMap, field: CatalogField): void {
   const current = node.toJSON() as Record<string, unknown>;
+  let addedKey = false;
+
   for (const key of FIELD_KEYS) {
     const value = field[key];
     if (value === undefined) {
@@ -261,10 +263,29 @@ function updateNode(doc: Document, node: YAMLMap, field: CatalogField): void {
     }
     // แตะเฉพาะคีย์ที่ค่าต่างจริง เพื่อให้โหนดที่ไม่เปลี่ยนคงคอมเมนต์ของมันไว้
     if (JSON.stringify(current[key]) === JSON.stringify(value)) continue;
+    if (!node.has(key)) addedKey = true;
     const created = doc.createNode(value);
     blockify(created);
     node.set(key, created);
   }
+
+  // yaml ต่อคีย์ใหม่ไว้ท้ายสุดเสมอ ทำให้ deferredOn ไปโผล่ใต้ source ซึ่งอ่านแล้วงง
+  if (addedKey) sortKeys(node);
+}
+
+function keyOf(pair: unknown): string {
+  const key = (pair as { key?: unknown }).key;
+  if (typeof key === "string") return key;
+  const value = (key as { value?: unknown } | undefined)?.value;
+  return typeof value === "string" ? value : "";
+}
+
+/** เรียงคีย์ตามลำดับมาตรฐาน คีย์แปลกปลอมไปต่อท้ายโดยคงลำดับเดิม */
+function sortKeys(node: YAMLMap): void {
+  const rank = new Map(FIELD_KEYS.map((key, index) => [String(key), index]));
+  node.items.sort(
+    (a, b) => (rank.get(keyOf(a)) ?? FIELD_KEYS.length) - (rank.get(keyOf(b)) ?? FIELD_KEYS.length),
+  );
 }
 
 /** ตัดคีย์ที่เป็น undefined ออก และเรียงคีย์ให้คงที่ */

@@ -335,6 +335,9 @@ function report(
   out.write(
     `  ${pad("ยังไม่ได้ตัดสิน", 20)} ${summary.unmarked > 0 ? yellow(String(summary.unmarked)) : String(summary.unmarked)}\n`,
   );
+  if (summary.deferred > 0) {
+    out.write(`  ${pad("หนี้เก่าที่พักไว้", 19)} ${blue(String(summary.deferred))}\n`);
+  }
   out.write(`  ${pad("ระบุว่าไม่ใช่", 21)} ${String(summary.notPii)}\n`);
   if (sensitive.length > 0) {
     out.write(`  ${pad("ข้อมูลอ่อนไหว ม.26", 18)} ${red(String(sensitive.length))}\n`);
@@ -345,11 +348,18 @@ function report(
 
   out.write("\n");
   if (readOnly) {
-    out.write(
-      summary.unmarked > 0
-        ? `${yellow("ยังไม่ผ่าน")} — เหลือ ${summary.unmarked} ฟิลด์ที่ยังไม่ได้ตัดสิน\n`
-        : `${green("ผ่าน")} — ทุกฟิลด์ถูกตัดสินแล้ว\n`,
-    );
+    if (summary.unmarked > 0) {
+      out.write(`${yellow("ยังไม่ผ่าน")} — เหลือ ${summary.unmarked} ฟิลด์ใหม่ที่ยังไม่ได้ตัดสิน\n`);
+    } else if (flags.strict && summary.deferred > 0) {
+      out.write(`${yellow("ยังไม่ผ่าน")} — โหมดเข้ม เหลือหนี้เก่า ${summary.deferred} ฟิลด์\n`);
+    } else if (summary.deferred > 0) {
+      out.write(
+        `${green("ผ่าน")} — ของใหม่ตัดสินครบ ` +
+          `${dim(`(ยังมีหนี้เก่าค้างอยู่ ${summary.deferred} ฟิลด์ — ดูด้วย arak status --strict)`)}\n`,
+      );
+    } else {
+      out.write(`${green("ผ่าน")} — ทุกฟิลด์ถูกตัดสินแล้ว\n`);
+    }
   } else if (flags.check) {
     out.write(
       changed

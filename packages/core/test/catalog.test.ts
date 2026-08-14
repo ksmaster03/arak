@@ -138,6 +138,31 @@ describe("serializeCatalog", () => {
     expect(out).toContain("retention: P5Y");
   });
 
+  it("คีย์ที่เพิ่งเพิ่มไปอยู่ตามลำดับมาตรฐาน ไม่ใช่ต่อท้ายสุด", () => {
+    // yaml ต่อคีย์ใหม่ไว้ท้ายเสมอ ทำให้ deferredOn เคยไปโผล่ใต้ source ซึ่งอ่านแล้วงง
+    const { catalog } = parseCatalog(EXISTING);
+    const updated = catalog.fields.map((f) => ({
+      ...f,
+      status: "deferred" as const,
+      deferredOn: "2026-08-14",
+    }));
+    const out = serializeCatalog({ ...catalog, fields: updated }, EXISTING);
+
+    const lines = out.split("\n");
+    const deferredAt = lines.findIndex((l) => l.includes("deferredOn:"));
+    const sourceAt = lines.findIndex((l) => l.trimStart().startsWith("source:"));
+    expect(deferredAt).toBeGreaterThan(-1);
+    expect(deferredAt).toBeLessThan(sourceAt);
+  });
+
+  it("ไม่สลับลำดับคีย์ของรายการที่ไม่ได้เพิ่มคีย์ใหม่", () => {
+    const { catalog } = parseCatalog(EXISTING);
+    const updated = catalog.fields.map((f) => ({ ...f, status: "deferred" as const }));
+    const out = serializeCatalog({ ...catalog, fields: updated }, EXISTING);
+    expect(out.indexOf("status:")).toBeLessThan(out.indexOf("category:"));
+    expect(out).toContain("# ฟิลด์นี้ทีมกฎหมายตรวจแล้วเมื่อ ส.ค. 2569");
+  });
+
   it("ลบคีย์ที่ไม่มีค่าแล้วออกจากไฟล์", () => {
     const { catalog } = parseCatalog(EXISTING);
     const updated = catalog.fields.map((f) => {
