@@ -1,65 +1,102 @@
-<img src="docs/banner.svg" alt="Arak — mark personal data while the code is being written" width="100%">
+<img src="docs/hero.webp" alt="Arak, the guardian who stands watch over personal data in your code" width="100%">
 
 <p align="right"><strong>English</strong> · <a href="README.th.md">ภาษาไทย</a></p>
 
-Arak marks personal data **while the code is being written** — not months later in a CI report
-nobody reads. It keeps a reviewable catalog of every field that holds personal data, with its
-purpose, legal basis and retention, and turns that into a Thai PDPA Record of Processing
-Activities (RoPA).
+## The name
 
-It ships as a Claude Code plugin, a CLI, and a Thai PII detection library.
+**อารักษ์** (*arak*) is the guardian spirit that watches over a place. A house, a field, a bend in
+the river. Thai households build it a small shrine at the edge of the property and leave something
+there each morning, on the understanding that what most needs protecting is rarely what anyone
+remembers to guard.
 
-**Free for personal, educational, research and nonprofit use. Commercial use requires a licence** —
-see [COMMERCIAL.md](COMMERCIAL.md).
+Your database is such a place. Somewhere inside it sits a citizen ID, a phone number, a diagnosis.
+Details belonging to real people who handed them over and assumed someone would look after them.
+
+Nobody remembers to guard that. Everybody remembers the deadline.
+
+## What it does
+
+Arak watches for the moment a field is written into your schema, and asks right then whether it
+holds a person's data and what you are keeping it for.
+
+Your answers go into a catalog that lives in the repository, next to the code it describes. From
+that catalog comes the document the law asks for: a Record of Processing Activities under section
+39 of Thailand's Personal Data Protection Act.
+
+It comes as a Claude Code plugin, a command line tool, and a Thai personal-data detection library
+you can lift out and use on its own.
 
 ---
 
-## The problem
+## Why at write time
 
-Privacy tooling today **scans after the fact**. The report arrives once the code is already on CI,
-by which time the field is used all over the system and nobody goes back to fix it.
+Every privacy tool on the market scans after the fact. The report lands on a dashboard weeks after
+the code shipped, by which point the field has been read by nine services, copied into two caches,
+and logged somewhere nobody remembers. The report is accurate. It is also ignored, because acting
+on it now costs a sprint, and there is always something more urgent than a sprint spent on a field
+that already works.
 
-The right moment is **the instant the field is written**, while whoever wrote it — human or AI
-assistant — still remembers what it is for.
+One moment exists when getting it right is nearly free: when the field is first written, while
+whoever wrote it still holds in their head the reason it exists.
 
-And no existing tool knows Thai law. Section 39 of the Personal Data Protection Act requires a
-record covering seven items: what is collected, why, who controls it, how long it is kept, the
-rights and access conditions, disclosures under section 27, and grounds for refusing a request —
-plus a description of the security measures required by section 37.
+That moment lasts about thirty seconds. Arak lives inside it.
 
-## How it works
+<img src="docs/loop.svg" alt="A field is written, the guardian asks, a human decides, the record follows" width="100%">
 
-<img src="docs/loop.svg" alt="A field is written, the hook asks, a human decides, the record follows" width="100%">
+---
+
+<img src="docs/guardian.webp" alt="A Thai guardian deity holding a tablet of records, several lines covered by redaction bars" align="right" width="290">
+
+## Three lines it will not cross
+
+A guardian that decides everything on your behalf stops being a guardian and becomes a liability.
+Arak holds three lines.
+
+**It will not invent your purposes.** Arak can read a category off your code. This is a phone
+number, that is a national ID. What it cannot read is *why you keep it*, because that reason is
+written nowhere in the code and never will be. An `email` kept to send receipts stands on
+contract. The same column kept to send promotions stands on consent. Identical in the schema,
+different in law. When nothing in your catalog fits, Arak stops and asks you. A record that looks
+tidy and is wrong does more damage than no record at all.
+
+**It will not delete.** Fields vanish from schemas all the time. The data behind them does not
+vanish with them. When a column disappears, Arak marks the entry `orphaned` and leaves it standing
+there until a human says what became of the rows.
+
+**It will not repeat what it sees.** When Arak sweeps your files for real personal data it prints
+`08••••••••78`, never the number. CI logs outlive the files they were scanning, and a scanner that
+shouts its findings into a log has become the leak it was hired to find.
+
+<br clear="right">
+
+---
 
 ## Install
 
-Open Claude Code in the project you want to protect, then:
+Open Claude Code in the project you want watched:
 
 ```
 /plugin marketplace add ksmaster03/arak
 /plugin install arak@arak
 ```
 
-Restart Claude Code, then run `/arak:setup`.
+Restart, then run `/arak:setup`.
 
-It also works from [claude.ai settings → Plugins → Add marketplace](https://claude.ai/settings/customize-plugins),
+It also works from [claude.ai → Settings → Plugins → Add marketplace](https://claude.ai/settings/customize-plugins)
 using `https://github.com/ksmaster03/arak`.
 
-> On a machine with no SSH key, the `owner/repo` shorthand may still try SSH first. Either use the
-> full URL `https://github.com/ksmaster03/arak.git` or set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`.
-
-That is the whole install. The plugin bundles its hooks **and** the full `arak` CLI into
-dependency-free files, so there is no `npm install`, no `settings.json` to hand-edit, and nothing
+That is the whole installation. The plugin carries its hooks and the entire `arak` command inside
+dependency-free bundles, so there is no `npm install`, no `settings.json` to hand-edit, and nothing
 to add to your `PATH`.
 
 | Command | What it does |
 |---|---|
-| `/arak:setup` | Sets the project up from scratch, then helps you fill in the section 39 fields |
-| `/arak:mark` | Walks through undecided fields one at a time |
-| `/arak:check` | Reports status, and finds real personal data sitting in your files |
+| `/arak:setup` | Sets the project up, then walks you through the section 39 details no tool can guess |
+| `/arak:mark` | Takes the undecided fields one at a time, showing its reasoning |
+| `/arak:check` | Status, plus a sweep for real personal data sitting in your files |
 
 <details>
-<summary>Using the CLI on its own</summary>
+<summary>Command line only</summary>
 
 ```bash
 git clone https://github.com/ksmaster03/arak.git && cd arak
@@ -67,29 +104,39 @@ pnpm install && pnpm run build
 
 node packages/cli/dist/index.js init      # create arak.config.yaml + pii-catalog.yaml
 node packages/cli/dist/index.js sync      # read the schema, reconcile the catalog
-node packages/cli/dist/index.js baseline  # park existing fields as acknowledged debt
+node packages/cli/dist/index.js baseline  # park what already exists as acknowledged debt
 node packages/cli/dist/index.js status    # the CI gate
 node packages/cli/dist/index.js scan      # find real personal data in files
 ```
 
-`packages/plugin/bin/arak.mjs` is the same CLI bundled with zero dependencies — it runs from a
+`packages/plugin/bin/arak.mjs` is the same program bundled with zero dependencies. It runs from a
 bare checkout with no `node_modules` at all.
+
+On a machine with no SSH key the `owner/repo` shorthand may try SSH first. Use the full
+`https://github.com/ksmaster03/arak.git`, or set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`.
 </details>
 
-## The first run
+---
+
+## Pointing it at an old codebase
 
 <img src="docs/terminal.svg" alt="arak sync reporting 28 undecided fields, five of them sensitive under section 26" width="100%">
 
-Installing into a codebase written two years ago will surface dozens of pending fields at once.
-`arak baseline` moves them all to **acknowledged debt** — still counted and reported every run,
-but no longer failing CI and no longer nagging you in the editor. From then on you are only asked
-about what you write next.
+Run Arak against two years of accumulated schema and it will surface dozens of pending fields at
+once. This is where most privacy tools lose their user permanently.
 
-A privacy tool that goes red on day one is a privacy tool that gets switched off on day two.
+So `arak baseline` takes everything that already exists and files it as **acknowledged debt**.
+Still counted, still printed on every run, no longer failing your build and no longer interrupting
+your work. From then on you are asked about one thing only: what you write next.
+
+A guard that shouts at everything is a guard nobody listens to.
+
+---
 
 ## Marking
 
-Write it in the Prisma doc comment above the field. Any prose already there stays where it is.
+It goes in the Prisma doc comment above the field, alongside whatever prose is already sitting
+there.
 
 ```prisma
 model Customer {
@@ -110,20 +157,24 @@ model Customer {
 
 | Key | Meaning |
 |---|---|
-| `category` | Data category — a bare value is shorthand: `@pii(contact)` |
-| `purposes` | Keys declared in the catalog's `purposes`; separate several with `;` `\|` or `+` |
-| `retention` | ISO-8601 duration such as `P5Y`, when this field differs from its purpose |
-| `reason` | For `@not-pii` only |
+| `category` | Data category. A bare value is shorthand: `@pii(contact)` |
+| `purposes` | Keys declared in the catalog. Separate several with `;` `\|` or `+` |
+| `retention` | ISO-8601 duration such as `P5Y`, for a field that outlives its purpose |
+| `reason` | Required on `@not-pii`, because "not personal data" is a claim somebody will audit |
 
-Categories come in two sets. The general ones — `identity` `government_id` `contact` `financial`
-`employment` `education` `location` `device` `behavioral` `media` `family` `vehicle` `credential` —
-and the **sensitive ones under section 26** — `health` `disability` `belief_religion`
-`race_ethnicity` `political_opinion` `sexual_behavior` `criminal_record` `union` `genetic`
-`biometric` — which are counted separately because they need explicit consent.
+General categories: `identity` `government_id` `contact` `financial` `employment` `education`
+`location` `device` `behavioral` `media` `family` `vehicle` `credential`.
+
+Sensitive categories under section 26, counted separately because they demand explicit consent:
+`health` `disability` `belief_religion` `race_ethnicity` `political_opinion` `sexual_behavior`
+`criminal_record` `union` `genetic` `biometric`.
+
+---
 
 ## The catalog
 
-`pii-catalog.yaml` is the single source of truth, and it lives in git.
+`pii-catalog.yaml` is the single source of truth, and it belongs in git where the team can argue
+with it in a pull request.
 
 ```yaml
 purposes:
@@ -146,35 +197,35 @@ fields:
       field: taxId
 ```
 
-Two halves, two owners, and the tool respects the line strictly:
+The file has two halves with two different owners, and Arak respects the border absolutely.
 
-- `controller` `purposes` `access` `securityMeasures` are **yours**. The tool never edits them, and
-  comments you write there survive every sync.
-- `fields` is kept in step with the source, but **nothing is ever deleted**. A field that disappears
-  from the code is flagged `orphaned`, because dropping a column does not delete the data behind it.
+The top half (`controller`, `purposes`, `access`, `securityMeasures`) is yours. Arak never edits
+it. Comments you write there survive every sync, because the sentence your data protection officer
+wrote at 11pm explaining a retention period is worth more than anything the tool generated.
 
-## Decision rules
+The bottom half (`fields`) Arak keeps honest against your schema, adding and updating, never
+removing.
 
-Three rules, and only three:
+## How it decides
 
-1. A field with `@pii(...)` in the code — **the code wins**, because it travels with the code.
-2. No annotation but already in the catalog — **the catalog wins**, because a human put it there.
-3. Neither — the guesser proposes it as `unmarked` for a human to decide.
+Three rules. There have never been more than three.
 
-Statuses are `unmarked` (new, undecided — hook asks, CI fails), `deferred` (acknowledged debt — no
-nagging, CI passes, still counted), `marked`, and `not-pii`. Once a human decides, the guesser's
-`confidence` and `detectedBy` are dropped rather than left to confuse the next reader.
+1. A field annotated in the code. **The code wins**, because it travels with the code.
+2. No annotation, but already in the catalog. **The catalog wins**, because a human put it there.
+3. Neither. The guesser proposes it as `unmarked`, and a human settles it.
 
-**Step 3 is never automated past the category.** Data categories can be read off the code, but
-purposes and legal bases are business decisions. An `email` kept to send receipts (basis: contract)
-and one kept to send promotions (basis: consent) look identical in code and are governed by
-different law. When nothing in the catalog fits, the plugin stops and asks. A RoPA that looks
-tidy but is wrong is more dangerous than no RoPA at all.
+Four states: `unmarked` (new and undecided, you get asked, CI fails), `deferred` (acknowledged
+debt, quiet, CI passes, still counted), `marked`, and `not-pii`. The moment a human decides, the
+guesser's `confidence` and `detectedBy` are stripped out, so that nobody reading the file next year
+mistakes a machine's hunch for a person's judgment.
 
-## Finding real data in files
+---
 
-`sync` covers what the *schema* declares. `scan` looks at whether the *files* contain real people's
-data — seed scripts, fixtures, sample SQL, a log that got committed by accident.
+## Finding what is already loose
+
+`sync` covers what the schema *declares*. `scan` asks a different question: is real personal data
+sitting in your files right now, in a seed script, a fixture, a sample SQL dump, a log somebody
+committed at 2am and forgot about.
 
 ```
 $ arak scan
@@ -185,28 +236,26 @@ $ arak scan
   email                so••••••••th     prisma/seed.ts:3:87
 ```
 
-**Real values are never printed.** You see the first and last characters only, because CI logs
-outlive the files they scanned.
+The detectors live in `@arak/detect-th` and work perfectly well without the rest of Arak.
 
-Detectors live in `@arak/detect-th`, which is usable on its own:
-
-| Type | How it is detected |
+| Type | How it is caught |
 |---|---|
-| Thai national ID · tax ID | 13 digits **with the check digit verified**, which throws out ~91% of random reference codes |
-| Phone | Real structure — mobile 06/08/09 plus eight digits, `+66` supported |
-| Email · IPv4 | Standard formats |
+| Thai national ID, tax ID | 13 digits **with the check digit verified**, discarding about 91% of random reference codes |
+| Phone | Real structure. Mobile 06/08/09 plus eight digits, `+66` understood |
+| Email, IPv4 | Standard forms |
 | Thai personal name | Anchored on the honorifics นาย นาง นางสาว น.ส. ด.ช. ด.ญ. |
-| Thai address | ต. อ. จ. แขวง เขต ซอย หมู่ ถนน — adjacent parts merge into one address |
+| Thai address | ต. อ. จ. แขวง เขต ซอย หมู่ ถนน, with adjacent fragments merged into one address |
 | Licence plate | Two Thai consonants, with or without a leading digit |
-| Credit card | 14–19 digits with Luhn |
-| Passport · bank account · postal code | **Context word required nearby**, otherwise false positives drown everything |
+| Credit card | 14 to 19 digits with Luhn |
+| Passport, bank account, postal code | **A context word must sit nearby**, or false positives drown everything |
 
-> The Thai ID check digit has a measured blind spot: the third digit carries weight 11, which is
-> divisible by 11 and therefore contributes nothing to the remainder. **Change the third digit to
-> anything and the formula cannot tell.** Other positions slip through about 1.7% of the time.
-> Good enough to screen with, never good enough to verify identity with.
+> One point of honesty about that check digit. It has a blind spot and we measured it. The third
+> digit carries weight 11, which divides cleanly by 11 and so contributes nothing to the remainder.
+> **Alter the third digit to anything at all and the formula cannot tell.** Other positions slip
+> past about 1.7% of the time. Good enough to screen with. Not good enough to verify a human being
+> with, and we will not pretend otherwise.
 
-Files that deliberately contain realistic-looking data can be skipped:
+Files that are supposed to hold realistic-looking data can be excused:
 
 ```yaml
 scan:
@@ -214,43 +263,47 @@ scan:
     - "**/test/**"
 ```
 
-or `--ignore "<glob>"` on the command line, repeatable.
+or `--ignore "<glob>"`, repeatable.
 
-## CI gate
+---
+
+## The gate
 
 ```yaml
 - run: node packages/cli/dist/index.js status
 ```
 
-- `0` — every new field has been decided
-- `1` — undecided fields remain, or the catalog has an error such as a field marked as personal
-  data with no purpose (section 39(2) requires one)
-- `2` — called wrongly, or a file could not be read
+`0` means every new field has been decided.
+`1` means undecided fields remain, or the catalog contradicts itself: a field marked as personal
+data with no purpose attached, which section 39(2) does not allow.
+`2` means it was called wrongly, or a file would not open.
 
-Add `--strict` to make acknowledged debt fail too, once the team is ready to clear it.
-Use `sync --check` to require that the committed catalog always matches the schema.
+`--strict` makes acknowledged debt fail too, for the day the team is ready to clear it.
+`sync --check` demands that the committed catalog always match the schema.
 
-## Status
+---
 
-TypeScript + Prisma is the first supported stack.
+## Where it stands
 
-| Done | Not yet |
+TypeScript and Prisma are the first supported stack.
+
+| Standing | Not yet built |
 |---|---|
-| Catalog schema covering section 39 | RoPA document generator (.docx/.xlsx) |
-| Prisma schema reader with `@pii` | Semgrep rules that stop PII reaching logs |
+| Catalog covering all of section 39 | RoPA document generator (.docx/.xlsx) |
+| Prisma reader with `@pii` annotations | Semgrep rules that stop PII reaching logs |
 | Catalog writes that preserve your comments | MCP server for redacted file reads |
 | 39 field-name heuristics | OpenAPI and TypeScript type readers |
 | 12 Thai value detectors | Thai names without an honorific |
-| Deterministic, reversible redactor | Publishing to npm and a public marketplace |
-| Three Claude Code hooks plus baselining | |
-| `init` / `sync` / `baseline` / `status` / `scan` | |
+| Deterministic, reversible redactor | npm and a public marketplace listing |
+| Three Claude Code hooks, plus baselining | |
+| `init` · `sync` · `baseline` · `status` · `scan` | |
 
-The field-name guesser reads names and types only. It exists so there is something to decide on
-day one, and every rule in it was tuned against four production schemas — a warehouse system, a
-maintenance system, an HR system, and the clinic schema in
-`arak-sandbox`.
+The field-name guesser reads names and types, nothing more. It exists so there is something to
+decide on day one. Every rule in it was cut against four production schemas, a warehouse system, a
+maintenance system, an HR system and the clinic schema in `arak-sandbox`, and several of those
+rules exist because the tool got it embarrassingly wrong first.
 
-## Development
+## Working on Arak
 
 ```bash
 pnpm test        # 155 tests
@@ -263,28 +316,34 @@ packages/core       Catalog model · decision rules · YAML I/O · field-name he
 packages/prisma     Prisma schema reader and the @pii annotations
 packages/detect-th  Thai value detectors and the reversible redactor (no dependencies)
 packages/cli        The arak command
-packages/plugin     Claude Code plugin — hooks, commands, and a bundled arak
+packages/plugin     Claude Code plugin: hooks, commands, and a bundled arak
 examples/demo-app   A worked schema used as a test bed
+docs/               Artwork and diagrams
 .claude-plugin/     Marketplace catalog
 ```
 
-The whole project has exactly one runtime dependency, [`yaml`](https://github.com/eemeli/yaml).
-For a tool that reads other people's schemas and data, the dependency count is part of the
-trust story.
+The entire project has one runtime dependency, [`yaml`](https://github.com/eemeli/yaml). For
+software that reads other people's schemas and other people's data, the dependency count is part
+of the argument for trusting it.
 
-The plugin is bundled with esbuild into one file per entry point **on purpose**: Claude Code
-installs a plugin by copying only the plugin directory into its cache, and link mode is
-unavailable on Windows, so anything importing across the workspace would break on arrival.
+The plugin is bundled into one file per entry point deliberately. Claude Code installs a plugin by
+copying only the plugin directory into its cache, and link mode does not exist on Windows, so
+anything reaching across the workspace would arrive broken.
 
-Every detector rule was tuned against real data, not invented at a desk. When you change a rule
-because of a case you hit, **add that case to the tests with a comment saying where it came from.**
+Every detector rule was cut against real data rather than imagined at a desk. When you change one
+because of a case you hit in the wild, **add that case to the tests with a comment saying where it
+came from.** Those comments are the institutional memory.
 
-## License
+---
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) — source available, not open source.
+<img src="docs/seal.webp" alt="Arak seal" align="left" width="86">
 
-Free for personal use, hobby projects, research, education, charities and government.
-**Any use by or for a for-profit company needs a commercial licence, including purely internal
-use.** See [COMMERCIAL.md](COMMERCIAL.md) for what that covers and how to get one.
+**[PolyForm Noncommercial License 1.0.0](LICENSE)**, source available rather than open source.
 
-Whatever Arak produces — your catalog, your RoPA — is entirely yours, with no strings attached.
+Free for personal use, hobby projects, research, teaching, charities and government. Any use by or
+for a for-profit company needs a commercial licence, internal use included. See
+[COMMERCIAL.md](COMMERCIAL.md).
+
+Whatever Arak produces, your catalog and your record, is yours entirely with nothing attached.
+
+<br clear="left">
