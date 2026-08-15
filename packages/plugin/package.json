@@ -5,9 +5,15 @@
   "license": "Apache-2.0",
   "type": "module",
   "private": true,
-  "files": [".claude-plugin", "hooks"],
+  "files": [".claude-plugin", "hooks", "commands", "bin"],
+  "scripts": {
+    "build": "node build.mjs"
+  },
   "dependencies": {
     "@arak/cli": "workspace:*",
     "@arak/core": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
   }
 }

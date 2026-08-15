@@ -23,16 +23,44 @@
 
 ## เริ่มใช้
 
-```bash
-pnpm install
-pnpm run build
+เปิด Claude Code ที่โปรเจกต์ที่อยากติดตั้ง แล้วสั่งสองบรรทัด
 
-node packages/cli/dist/index.js init     # สร้าง arak.config.yaml + pii-catalog.yaml
-node packages/cli/dist/index.js sync     # อ่านสคีมา แล้วปรับแคตตาล็อกให้ตรง
-node packages/cli/dist/index.js baseline # ยกของเก่าเป็นหนี้ที่รับรู้แล้ว เพื่อเริ่มนับจากศูนย์
-node packages/cli/dist/index.js status   # ด่านสำหรับ CI — คืนค่า 1 ถ้ายังมีฟิลด์ใหม่ที่ไม่ได้ตัดสิน
-node packages/cli/dist/index.js scan     # หาข้อมูลจริงที่ปนอยู่ใน seed / fixture / log
 ```
+/plugin marketplace add D:/Project/arak
+/plugin install arak@arak
+```
+
+รีสตาร์ต Claude Code แล้ว
+
+```
+/arak:setup
+```
+
+เท่านี้จบ ปลั๊กอินมาพร้อมทั้งฮุกและคำสั่ง `arak` ในตัว
+**ไม่ต้อง npm install ไม่ต้องแก้ settings.json และไม่ต้องมี Node dependency อะไรเพิ่ม**
+เพราะทุกอย่างถูก bundle เป็นไฟล์เดียวจบ
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `/arak:setup` | ตั้งค่าให้โปรเจกต์นี้ตั้งแต่ต้น แล้วช่วยเติมวัตถุประสงค์ตาม ม.39 |
+| `/arak:mark` | ไล่ปิดงานฟิลด์ที่ยังไม่ได้ตัดสินทีละตัว |
+| `/arak:check` | ดูสถานะ และหาข้อมูลจริงที่ปนอยู่ในไฟล์ |
+
+### ใช้จากบรรทัดคำสั่งอย่างเดียวก็ได้
+
+```bash
+git clone <repo> && cd arak
+pnpm install && pnpm run build
+
+node packages/cli/dist/index.js init      # สร้าง arak.config.yaml + pii-catalog.yaml
+node packages/cli/dist/index.js sync      # อ่านสคีมา แล้วปรับแคตตาล็อกให้ตรง
+node packages/cli/dist/index.js baseline  # ยกของเก่าเป็นหนี้ที่รับรู้แล้ว
+node packages/cli/dist/index.js status    # ด่านสำหรับ CI
+node packages/cli/dist/index.js scan      # หาข้อมูลจริงที่ปนอยู่ในไฟล์
+```
+
+หรือใช้ไฟล์ที่ bundle แล้วซึ่งไม่ต้องมี node_modules เลย —
+`node packages/plugin/bin/arak.mjs <คำสั่ง>`
 
 ติดตั้งกับโปรเจกต์ที่เขียนมาแล้วสองปี ครั้งแรกจะเจอฟิลด์ค้างหลายสิบตัวพร้อมกัน
 `arak baseline` ยกทั้งหมดไปเป็น **หนี้เก่าที่รับรู้แล้ว** — ยังโชว์ในรายงานทุกครั้ง
@@ -206,19 +234,20 @@ scan:
 | สคีมาแคตตาล็อกครบตาม ม.39 | ตัวสร้างเอกสาร RoPA (.docx/.xlsx) |
 | ตัวอ่านสคีมา Prisma + `@pii` | กฎ Semgrep ห้าม PII ไหลลง log |
 | เขียนแคตตาล็อกกลับโดยคอมเมนต์ไม่หาย | MCP server อ่านไฟล์แบบปิดบัง (ด้าน B) |
-| ตัวเดาจากชื่อฟิลด์ 35 กฎ | ตัวอ่าน OpenAPI และ TypeScript type |
+| ตัวเดาจากชื่อฟิลด์ 39 กฎ | ตัวอ่าน OpenAPI และ TypeScript type |
 | ตัวตรวจค่าจริงของไทย 12 ชนิด | ชื่อไทยที่ไม่มีคำนำหน้า |
-| ตัวปิดบังที่ให้ตัวแทนคงที่และแปลงกลับได้ | ปล่อยขึ้น plugin marketplace |
+| ตัวปิดบังที่ให้ตัวแทนคงที่และแปลงกลับได้ | ปล่อยขึ้น npm และ marketplace สาธารณะ |
 | ฮุก Claude Code สามตัว + เส้นฐาน | |
+| ปลั๊กอินติดตั้งได้จาก marketplace ในเครื่อง | |
 | `arak init` / `sync` / `baseline` / `status` / `scan` | |
 
 ตัวเดาในตอนนี้เดาจากชื่อฟิลด์และชนิดข้อมูลเท่านั้น เป็นของชั่วคราวเพื่อให้มีของให้ตัดสินตั้งแต่วันแรก
-ทุกกฎถูกปรับจากการรันกับสคีมาจริงสามชุด — ระบบคลังสินค้า ระบบซ่อมบำรุง และระบบบุคคล
+ทุกกฎถูกปรับจากการรันกับสคีมาจริงสี่ชุด — ระบบคลังสินค้า ระบบซ่อมบำรุง ระบบบุคคล และระบบคลินิก
 
 ## พัฒนา
 
 ```bash
-pnpm test          # 149 เทสต์
+pnpm test          # 155 เทสต์
 pnpm run build
 pnpm run typecheck
 ```
@@ -230,9 +259,15 @@ packages/core       โครงแคตตาล็อก · กฎการ�
 packages/prisma     ตัวอ่านสคีมา Prisma และ @pii ในคอมเมนต์
 packages/detect-th  ตัวตรวจค่าจริงของไทย และตัวปิดบังที่แปลงกลับได้ (ไม่มี dependency)
 packages/cli        คำสั่ง arak
-packages/plugin     ฮุกสำหรับ Claude Code
+packages/plugin     ปลั๊กอิน Claude Code — ฮุก + คำสั่ง + arak ที่ bundle แล้ว
 examples/demo-app   สคีมาสมมติที่ใช้เป็นสนามทดสอบ
+.claude-plugin/     แคตตาล็อก marketplace สำหรับติดตั้งจากพาธในเครื่อง
 ```
+
+ปลั๊กอินถูก bundle ด้วย esbuild เป็นไฟล์เดียวต่อจุดเข้า **โดยตั้งใจ**
+เพราะ Claude Code ติดตั้งปลั๊กอินด้วยการคัดลอกเฉพาะโฟลเดอร์ปลั๊กอินไปไว้ในแคช
+(โหมด link ใช้บนวินโดวส์ไม่ได้) ถ้ายัง import ข้ามไปแพ็กเกจอื่นในเวิร์กสเปซ
+ตัวที่ถูกคัดลอกไปจะพังทันทีเพราะ symlink ของ pnpm ไม่ได้ตามไปด้วย
 
 มี dependency ตอนรันจริงตัวเดียวทั้งโปรเจกต์คือ [`yaml`](https://github.com/eemeli/yaml)
 สำหรับเครื่องมือที่ต้องอ่านสคีมาและข้อมูลของคนอื่น จำนวน dependency คือส่วนหนึ่งของความน่าเชื่อถือ

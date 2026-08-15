@@ -13,15 +13,8 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
   if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
-};
 var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -39,515 +32,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-
-// ../core/dist/types.js
-function isKnownCategory(category) {
-  return SENSITIVE_SET.has(category) || GENERAL_CATEGORIES.includes(category);
-}
-function emptyCatalog() {
-  return { version: 1, purposes: [], fields: [] };
-}
-var LEGAL_BASES, SENSITIVE_CATEGORIES, GENERAL_CATEGORIES, SENSITIVE_SET;
-var init_types = __esm({
-  "../core/dist/types.js"() {
-    "use strict";
-    LEGAL_BASES = [
-      "consent",
-      "contract",
-      "legal_obligation",
-      "vital_interest",
-      "public_task",
-      "legitimate_interest",
-      "research_archive"
-    ];
-    SENSITIVE_CATEGORIES = [
-      "race_ethnicity",
-      "political_opinion",
-      "belief_religion",
-      "sexual_behavior",
-      "criminal_record",
-      "health",
-      "disability",
-      "union",
-      "genetic",
-      "biometric"
-    ];
-    GENERAL_CATEGORIES = [
-      "identity",
-      "government_id",
-      "contact",
-      "financial",
-      "employment",
-      "education",
-      "location",
-      "device",
-      "behavioral",
-      "media",
-      "family",
-      "vehicle",
-      "credential"
-    ];
-    SENSITIVE_SET = new Set(SENSITIVE_CATEGORIES);
-  }
-});
-
-// ../core/dist/heuristic.js
-function normalize(name) {
-  return name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase().replace(/[\s-]+/g, "_");
-}
-function passesGate(gate, container) {
-  switch (gate) {
-    case "always":
-      return true;
-    case "person":
-      return PERSON_CONTAINER.test(container);
-    case "person-tail":
-      return PERSON_TAIL.test(container);
-  }
-}
-function guessCategory(field) {
-  if (field.isRelation)
-    return null;
-  const name = normalize(field.source.field);
-  if (NOT_A_VALUE.test(name))
-    return null;
-  const container = field.source.container;
-  const type = field.source.type ?? "";
-  const penalty = JURISTIC_CONTAINER.test(container) ? JURISTIC_PENALTY : 1;
-  let best = null;
-  for (const rule of RULES) {
-    if (!passesGate(rule.gate ?? "always", container))
-      continue;
-    if (rule.typeTest !== void 0 && !rule.typeTest.test(type))
-      continue;
-    if (!rule.test.test(name))
-      continue;
-    const confidence = Math.round(rule.confidence * penalty * 100) / 100;
-    if (best === null || confidence > best.confidence) {
-      best = { ruleId: rule.id, category: rule.category, confidence };
-    }
-  }
-  return best;
-}
-var PERSON_CONTAINER, PERSON_TAIL, JURISTIC_CONTAINER, JURISTIC_PENALTY, NOT_A_VALUE, RULES, RULE_COUNT;
-var init_heuristic = __esm({
-  "../core/dist/heuristic.js"() {
-    "use strict";
-    PERSON_CONTAINER = /(user|customer|client|driver|employee|staff|person|people|contact|member|patient|applicant|candidate|guest|visitor|profile|account|owner|subscriber|recipient|passenger|student|teacher|payslip|payroll|compensation|attendance|leave)/i;
-    PERSON_TAIL = /(user|customer|client|driver|employee|staff|person|contact|member|patient|applicant|candidate|guest|visitor|profile|account|owner|subscriber|recipient|passenger|student|teacher)$/i;
-    JURISTIC_CONTAINER = /^(company|organi[sz]ation|corporate|firm|branch|tenant|site|carrier|vendor|supplier|clinic|hospital|store|shop|merchant)$/i;
-    JURISTIC_PENALTY = 0.4;
-    NOT_A_VALUE = /^(is|has|can|should|allow|enable|disable|require)_|_(locked|enabled|disabled|flag|required|verified|visible|count|total|order|index|seq|version|status|issue)$/;
-    RULES = [
-      // เลขประจำตัวที่ราชการออกให้
-      {
-        id: "citizen-id",
-        test: /(citizen|national|personal)_?(id|no|number)|id_?card|idcard|thai_?id/,
-        category: "government_id",
-        confidence: 0.95
-      },
-      { id: "passport", test: /passport/, category: "government_id", confidence: 0.95 },
-      {
-        id: "tax-id",
-        test: /tax_?(id|no|number)|vat_?(id|no|number)/,
-        category: "government_id",
-        confidence: 0.85
-      },
-      { id: "ssn", test: /social_?security|ssn\b/, category: "government_id", confidence: 0.95 },
-      // ข้อมูลติดต่อ
-      { id: "email", test: /e?_?mail(_?address)?$|^email/, category: "contact", confidence: 0.95 },
-      {
-        id: "phone",
-        test: /phone|mobile_?(no|number|phone)|^tel$|telephone|fax|line_?id|whatsapp/,
-        category: "contact",
-        confidence: 0.9
-      },
-      {
-        id: "address",
-        test: /address|addr\b|street|postcode|postal_?code|zip_?code|subdistrict|tambon|district|amphoe|province/,
-        category: "contact",
-        confidence: 0.75,
-        gate: "person"
-      },
-      // ข้อมูลระบุตัวตน
-      {
-        id: "person-name-compound",
-        test: /(first|last|middle|full|given|family|sur|nick|display|legal)_?name|fullname|surname/,
-        category: "identity",
-        confidence: 0.85
-      },
-      {
-        /**
-         * ชื่อของคนที่สาม เช่นผู้ติดต่อฉุกเฉินหรือผู้ปกครอง
-         * เป็นข้อมูลส่วนบุคคลของ "อีกคนหนึ่ง" ที่อยู่ในตารางของเจ้าของข้อมูล
-         */
-        id: "related-person-name",
-        test: /(emergency|guardian|parent|spouse|relative|referrer|contact)_?(person_?)?name/,
-        category: "identity",
-        confidence: 0.8
-      },
-      {
-        id: "person-name-bare",
-        test: /^name(_th|_en)?$/,
-        category: "identity",
-        confidence: 0.8,
-        gate: "person-tail"
-      },
-      { id: "thai-name", test: /(ชื่อ|นามสกุล)/, category: "identity", confidence: 0.9 },
-      {
-        id: "birth-date",
-        test: /birth_?(date|day)|date_?of_?birth|^dob$|วันเกิด/,
-        category: "identity",
-        confidence: 0.9
-      },
-      { id: "gender", test: /^gender$|^sex$|เพศ/, category: "identity", confidence: 0.8 },
-      { id: "signature", test: /signature|ลายเซ็น|ลายมือชื่อ/, category: "identity", confidence: 0.85 },
-      // ตัวระบุจากผู้ให้บริการภายนอก — นามแฝงที่ยังชี้กลับไปหาคนได้ จึงเป็นข้อมูลส่วนบุคคล
-      {
-        id: "external-subject-id",
-        test: /(google|line|facebook|apple|azure|oidc|oauth|sso)_?(sub|id|uid|user_?id)|_?sub$|external_?id/,
-        category: "identity",
-        confidence: 0.8,
-        gate: "person"
-      },
-      // หลักฐานความยินยอม — เป็นข้อมูลเกี่ยวกับบุคคลและเป็นสิ่งที่ผู้ควบคุมต้องพิสูจน์ได้
-      {
-        id: "consent-record",
-        test: /consent|pdpa_?(accepted|agreed)|terms_?accepted|opt_?in/,
-        category: "behavioral",
-        confidence: 0.75
-      },
-      // การเงิน
-      {
-        id: "bank",
-        test: /bank_?(account|acct|no|number)|account_?(no|number)|iban|swift|promptpay|card_?(no|number)|credit_?card/,
-        category: "financial",
-        confidence: 0.9
-      },
-      {
-        id: "money-person",
-        test: /salary|wage|income|payroll|compensation|bonus|allowance|provident|social_?security_?fund|เงินเดือน|รายได้/,
-        category: "financial",
-        confidence: 0.85
-      },
-      // การจ้างงานและการศึกษา
-      {
-        /** HN ของโรงพยาบาลคือตัวระบุผู้ป่วยโดยตรง ไม่ใช่รหัสระบบทั่วไป */
-        id: "patient-number",
-        test: /^hn$|^mrn$|hospital_?(no|number)|patient_?(no|id|code|number)/,
-        category: "identity",
-        confidence: 0.85
-      },
-      {
-        /** เลขใบอนุญาตประกอบวิชาชีพผูกกับตัวบุคคลและค้นย้อนกลับได้ */
-        id: "professional-licence",
-        test: /licen[cs]e_?(no|number|id)$|licen[cs]e_?number|practitioner_?(no|id)/,
-        category: "government_id",
-        confidence: 0.8
-      },
-      {
-        id: "employee-code",
-        test: /^emp(loyee)?_?(id|no|code)$|staff_?(id|no|code)|badge_?(id|no)/,
-        category: "employment",
-        confidence: 0.8
-      },
-      {
-        id: "employment",
-        test: /job_?title|^position$|^department$|hire_?date|resign|termination|probation|^start_?date$|^end_?date$|employment_?(type|status)/,
-        category: "employment",
-        confidence: 0.7,
-        gate: "person"
-      },
-      {
-        id: "education",
-        test: /education|degree|university|graduat|gpa|transcript/,
-        category: "education",
-        confidence: 0.7,
-        gate: "person"
-      },
-      // ตำแหน่งที่อยู่ — เฉพาะเมื่อผูกกับคน ไม่ใช่พิกัดของสถานที่
-      {
-        id: "geo",
-        test: /^(lat|lng|lon)$|latitude|longitude|geo_?(point|location)|gps|last_?location/,
-        category: "location",
-        confidence: 0.7,
-        gate: "person"
-      },
-      // อุปกรณ์และการเชื่อมต่อ
-      {
-        id: "device",
-        test: /ip_?address|^ip$|user_?agent|device_?(id|token|uuid)|mac_?address|fingerprint|advertising_?id|push_?token/,
-        category: "device",
-        confidence: 0.8
-      },
-      {
-        id: "behavioral",
-        test: /last_?(login|seen|active)|login_?(at|count|history)|visited|clickstream/,
-        category: "behavioral",
-        confidence: 0.6,
-        gate: "person"
-      },
-      // ภาพและสื่อ
-      {
-        id: "media",
-        test: /avatar|photo|picture|selfie|profile_?image|image_?(url|key)|voice_?(note|clip)|recording/,
-        category: "media",
-        confidence: 0.7,
-        gate: "person"
-      },
-      // ยานพาหนะ
-      {
-        id: "plate",
-        test: /license_?plate|plate_?(no|number)|ทะเบียนรถ|vehicle_?(reg|no)|driver_?license/,
-        category: "vehicle",
-        confidence: 0.85
-      },
-      // ข้อมูลยืนยันตัวตน
-      {
-        id: "credential",
-        test: /password|passwd|^pwd|otp|reset_?token|refresh_?token|api_?key|^secret/,
-        category: "credential",
-        confidence: 0.85
-      },
-      // ข้อมูลอ่อนไหวตามมาตรา 26
-      {
-        id: "health",
-        test: /health|medical|diagnos|allerg|blood_?(type|group)|prescription|treatment|illness|chronic|comorbid|symptom|vaccin|immuni|surgery|therapy|สุขภาพ|โรคประจำตัว/,
-        category: "health",
-        confidence: 0.9
-      },
-      { id: "disability", test: /disabilit|handicap|impairment|พิการ/, category: "disability", confidence: 0.9 },
-      { id: "religion", test: /religio|ศาสนา|faith_?group/, category: "belief_religion", confidence: 0.9 },
-      {
-        id: "race",
-        test: /ethnic|race$|nationality|เชื้อชาติ|สัญชาติ/,
-        category: "race_ethnicity",
-        confidence: 0.8
-      },
-      {
-        id: "criminal",
-        test: /criminal|conviction|offence|offense_?record|ประวัติอาชญากรรม/,
-        category: "criminal_record",
-        confidence: 0.9
-      },
-      { id: "union", test: /union_?(member|id)|สหภาพ/, category: "union", confidence: 0.85 },
-      {
-        id: "biometric",
-        test: /biometric|face_?(embedding|template|descriptor)|iris|fingerprint_?template|voice_?print/,
-        category: "biometric",
-        confidence: 0.9
-      },
-      { id: "genetic", test: /genetic|dna_?|genome/, category: "genetic", confidence: 0.9 },
-      /**
-       * ก้อน Json บนตารางที่เกี่ยวกับคนคือจุดบอดที่ใหญ่ที่สุด
-       * ชื่อฟิลด์ไม่บอกอะไรเลยว่าข้างในมีอะไร และของจริงมักมีข้อมูลภาษี เงินกู้ หรือผลประเมิน
-       * จึงเสนอด้วยความเชื่อมั่นต่ำเพื่อบังคับให้คนเปิดไปดู
-       */
-      {
-        id: "opaque-json",
-        test: /.*/,
-        typeTest: /^Json(\[\])?$/,
-        category: "behavioral",
-        confidence: 0.35,
-        gate: "person"
-      }
-    ];
-    RULE_COUNT = RULES.length;
-  }
-});
-
-// ../core/dist/reconcile.js
-function reconcile(existing, sourceFields, options) {
-  const useHeuristic = options.useHeuristic ?? true;
-  const changes = [];
-  const problems = [];
-  const byId = /* @__PURE__ */ new Map();
-  for (const f of existing.fields)
-    byId.set(f.id, f);
-  const purposeKeys = new Set(existing.purposes.map((p) => p.key));
-  const seen = /* @__PURE__ */ new Set();
-  const added = [];
-  for (const src of sourceFields) {
-    if (src.isRelation)
-      continue;
-    seen.add(src.id);
-    const prev = byId.get(src.id);
-    const ann = src.annotation ?? null;
-    if (ann === null && prev === void 0) {
-      if (!useHeuristic)
-        continue;
-      const hit = guessCategory(src);
-      if (hit === null)
-        continue;
-      added.push({
-        id: src.id,
-        status: "unmarked",
-        source: src.source,
-        category: hit.category,
-        detectedBy: [`heuristic:${hit.ruleId}`],
-        confidence: hit.confidence,
-        firstSeen: options.today
-      });
-      changes.push({
-        id: src.id,
-        kind: "added",
-        detail: `\u0E15\u0E31\u0E27\u0E40\u0E14\u0E32\u0E40\u0E2A\u0E19\u0E2D\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19 ${hit.category}`
-      });
-      continue;
-    }
-    const next = prev ? { ...prev, source: src.source } : {
-      id: src.id,
-      status: "unmarked",
-      source: src.source,
-      firstSeen: options.today
-    };
-    if (prev?.orphaned) {
-      delete next.orphaned;
-      changes.push({ id: src.id, kind: "restored", detail: "\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07" });
-    }
-    if (ann !== null) {
-      applyAnnotation(next, src, ann, problems, purposeKeys);
-    }
-    if (prev === void 0) {
-      added.push(next);
-      changes.push({
-        id: src.id,
-        kind: "added",
-        detail: ann ? `\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E44\u0E27\u0E49\u0E43\u0E19\u0E42\u0E04\u0E49\u0E14\u0E41\u0E25\u0E49\u0E27 (${next.status})` : void 0
-      });
-    } else {
-      recordDiff(prev, next, changes);
-      byId.set(src.id, next);
-    }
-  }
-  const scanned = new Set(options.scannedKinds);
-  for (const [id, field] of byId) {
-    if (seen.has(id))
-      continue;
-    if (!scanned.has(field.source.kind))
-      continue;
-    if (field.orphaned)
-      continue;
-    byId.set(id, { ...field, orphaned: true });
-    changes.push({ id, kind: "orphaned", detail: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E41\u0E25\u0E49\u0E27" });
-  }
-  const merged = existing.fields.map((f) => byId.get(f.id) ?? f);
-  added.sort((a, b) => a.id.localeCompare(b.id));
-  merged.push(...added);
-  for (const field of merged) {
-    validateField(field, problems, purposeKeys);
-  }
-  return { catalog: { ...existing, fields: merged }, changes, problems };
-}
-function applyAnnotation(next, src, ann, problems, purposeKeys) {
-  if (ann.kind === "not-pii") {
-    next.status = "not-pii";
-    delete next.deferredOn;
-    if (ann.reason !== void 0)
-      next.reason = ann.reason;
-    delete next.category;
-    delete next.purposes;
-    delete next.retention;
-    delete next.detectedBy;
-    delete next.confidence;
-    if (next.reason === void 0) {
-      problems.push({
-        level: "warning",
-        id: src.id,
-        message: "@not-pii \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E43\u0E2B\u0E49\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E44\u0E27\u0E49 \u2014 \u0E43\u0E2A\u0E48 reason= \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E2B\u0E49\u0E04\u0E19\u0E15\u0E23\u0E27\u0E08\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E44\u0E14\u0E49",
-        file: src.source.file,
-        line: src.source.line
-      });
-    }
-    return;
-  }
-  next.status = "marked";
-  delete next.reason;
-  delete next.deferredOn;
-  delete next.detectedBy;
-  delete next.confidence;
-  if (ann.category !== void 0)
-    next.category = ann.category;
-  if (ann.purposes !== void 0)
-    next.purposes = ann.purposes;
-  if (ann.retention !== void 0)
-    next.retention = ann.retention;
-  if (next.category === void 0) {
-    problems.push({
-      level: "warning",
-      id: src.id,
-      message: "@pii \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E30\u0E1A\u0E38 category",
-      file: src.source.file,
-      line: src.source.line
-    });
-  }
-  for (const key of next.purposes ?? []) {
-    if (!purposeKeys.has(key)) {
-      problems.push({
-        level: "error",
-        id: src.id,
-        message: `\u0E2D\u0E49\u0E32\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C "${key}" \u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01`,
-        file: src.source.file,
-        line: src.source.line
-      });
-    }
-  }
-}
-function validateField(field, problems, purposeKeys) {
-  if (field.status !== "marked")
-    return;
-  if (field.category !== void 0 && !isKnownCategory(field.category)) {
-    problems.push({
-      level: "warning",
-      id: field.id,
-      message: `\u0E2B\u0E21\u0E27\u0E14 "${field.category}" \u0E44\u0E21\u0E48\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E0A\u0E38\u0E14\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19`,
-      file: field.source.file,
-      line: field.source.line
-    });
-  }
-  if ((field.purposes ?? []).length === 0) {
-    problems.push({
-      level: "error",
-      id: field.id,
-      message: "\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E41\u0E25\u0E49\u0E27\u0E41\u0E15\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C \u2014 \u0E21.39(2) \u0E1A\u0E31\u0E07\u0E04\u0E31\u0E1A",
-      file: field.source.file,
-      line: field.source.line
-    });
-    return;
-  }
-  for (const key of field.purposes ?? []) {
-    if (!purposeKeys.has(key)) {
-      problems.push({
-        level: "error",
-        id: field.id,
-        message: `\u0E2D\u0E49\u0E32\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C "${key}" \u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01`,
-        file: field.source.file,
-        line: field.source.line
-      });
-    }
-  }
-}
-function recordDiff(prev, next, changes) {
-  if (prev.status !== next.status) {
-    const kind = next.status === "marked" ? "marked" : next.status === "not-pii" ? "not-pii" : next.status === "deferred" ? "deferred" : "unmarked";
-    changes.push({ id: next.id, kind, detail: `${prev.status} \u2192 ${next.status}` });
-    return;
-  }
-  if (prev.category !== next.category) {
-    changes.push({
-      id: next.id,
-      kind: "reclassified",
-      detail: `${prev.category ?? "\u2014"} \u2192 ${next.category ?? "\u2014"}`
-    });
-  }
-}
-var init_reconcile = __esm({
-  "../core/dist/reconcile.js"() {
-    "use strict";
-    init_heuristic();
-    init_types();
-  }
-});
 
 // ../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/nodes/identity.js
 var require_identity = __commonJS({
@@ -2192,7 +1676,7 @@ var require_log = __commonJS({
       if (logLevel === "debug")
         console.log(...messages);
     }
-    function warn2(logLevel, warning) {
+    function warn(logLevel, warning) {
       if (logLevel === "debug" || logLevel === "warn") {
         if (typeof node_process.emitWarning === "function")
           node_process.emitWarning(warning);
@@ -2201,7 +1685,7 @@ var require_log = __commonJS({
       }
     }
     exports.debug = debug;
-    exports.warn = warn2;
+    exports.warn = warn;
   }
 });
 
@@ -7876,7 +7360,567 @@ var require_dist = __commonJS({
   }
 });
 
+// ../cli/src/index.ts
+import { existsSync as existsSync2, writeFileSync } from "node:fs";
+import { basename, isAbsolute, join as join4, resolve } from "node:path";
+
+// ../core/dist/types.js
+var LEGAL_BASES = [
+  "consent",
+  "contract",
+  "legal_obligation",
+  "vital_interest",
+  "public_task",
+  "legitimate_interest",
+  "research_archive"
+];
+var SENSITIVE_CATEGORIES = [
+  "race_ethnicity",
+  "political_opinion",
+  "belief_religion",
+  "sexual_behavior",
+  "criminal_record",
+  "health",
+  "disability",
+  "union",
+  "genetic",
+  "biometric"
+];
+var GENERAL_CATEGORIES = [
+  "identity",
+  "government_id",
+  "contact",
+  "financial",
+  "employment",
+  "education",
+  "location",
+  "device",
+  "behavioral",
+  "media",
+  "family",
+  "vehicle",
+  "credential"
+];
+var SENSITIVE_SET = new Set(SENSITIVE_CATEGORIES);
+function isSensitiveCategory(category) {
+  return category !== void 0 && SENSITIVE_SET.has(category);
+}
+function isKnownCategory(category) {
+  return SENSITIVE_SET.has(category) || GENERAL_CATEGORIES.includes(category);
+}
+function emptyCatalog() {
+  return { version: 1, purposes: [], fields: [] };
+}
+
+// ../core/dist/heuristic.js
+var PERSON_CONTAINER = /(user|customer|client|driver|employee|staff|person|people|contact|member|patient|applicant|candidate|guest|visitor|profile|account|owner|subscriber|recipient|passenger|student|teacher|payslip|payroll|compensation|attendance|leave)/i;
+var PERSON_TAIL = /(user|customer|client|driver|employee|staff|person|contact|member|patient|applicant|candidate|guest|visitor|profile|account|owner|subscriber|recipient|passenger|student|teacher)$/i;
+var JURISTIC_CONTAINER = /^(company|organi[sz]ation|corporate|firm|branch|tenant|site|carrier|vendor|supplier|clinic|hospital|store|shop|merchant)$/i;
+var JURISTIC_PENALTY = 0.4;
+var NOT_A_VALUE = /^(is|has|can|should|allow|enable|disable|require)_|_(locked|enabled|disabled|flag|required|verified|visible|count|total|order|index|seq|version|status|issue)$/;
+var RULES = [
+  // เลขประจำตัวที่ราชการออกให้
+  {
+    id: "citizen-id",
+    test: /(citizen|national|personal)_?(id|no|number)|id_?card|idcard|thai_?id/,
+    category: "government_id",
+    confidence: 0.95
+  },
+  { id: "passport", test: /passport/, category: "government_id", confidence: 0.95 },
+  {
+    id: "tax-id",
+    test: /tax_?(id|no|number)|vat_?(id|no|number)/,
+    category: "government_id",
+    confidence: 0.85
+  },
+  { id: "ssn", test: /social_?security|ssn\b/, category: "government_id", confidence: 0.95 },
+  // ข้อมูลติดต่อ
+  { id: "email", test: /e?_?mail(_?address)?$|^email/, category: "contact", confidence: 0.95 },
+  {
+    id: "phone",
+    test: /phone|mobile_?(no|number|phone)|^tel$|telephone|fax|line_?id|whatsapp/,
+    category: "contact",
+    confidence: 0.9
+  },
+  {
+    id: "address",
+    test: /address|addr\b|street|postcode|postal_?code|zip_?code|subdistrict|tambon|district|amphoe|province/,
+    category: "contact",
+    confidence: 0.75,
+    gate: "person"
+  },
+  // ข้อมูลระบุตัวตน
+  {
+    id: "person-name-compound",
+    test: /(first|last|middle|full|given|family|sur|nick|display|legal)_?name|fullname|surname/,
+    category: "identity",
+    confidence: 0.85
+  },
+  {
+    /**
+     * ชื่อของคนที่สาม เช่นผู้ติดต่อฉุกเฉินหรือผู้ปกครอง
+     * เป็นข้อมูลส่วนบุคคลของ "อีกคนหนึ่ง" ที่อยู่ในตารางของเจ้าของข้อมูล
+     */
+    id: "related-person-name",
+    test: /(emergency|guardian|parent|spouse|relative|referrer|contact)_?(person_?)?name/,
+    category: "identity",
+    confidence: 0.8
+  },
+  {
+    id: "person-name-bare",
+    test: /^name(_th|_en)?$/,
+    category: "identity",
+    confidence: 0.8,
+    gate: "person-tail"
+  },
+  { id: "thai-name", test: /(ชื่อ|นามสกุล)/, category: "identity", confidence: 0.9 },
+  {
+    id: "birth-date",
+    test: /birth_?(date|day)|date_?of_?birth|^dob$|วันเกิด/,
+    category: "identity",
+    confidence: 0.9
+  },
+  { id: "gender", test: /^gender$|^sex$|เพศ/, category: "identity", confidence: 0.8 },
+  { id: "signature", test: /signature|ลายเซ็น|ลายมือชื่อ/, category: "identity", confidence: 0.85 },
+  // ตัวระบุจากผู้ให้บริการภายนอก — นามแฝงที่ยังชี้กลับไปหาคนได้ จึงเป็นข้อมูลส่วนบุคคล
+  {
+    id: "external-subject-id",
+    test: /(google|line|facebook|apple|azure|oidc|oauth|sso)_?(sub|id|uid|user_?id)|_?sub$|external_?id/,
+    category: "identity",
+    confidence: 0.8,
+    gate: "person"
+  },
+  // หลักฐานความยินยอม — เป็นข้อมูลเกี่ยวกับบุคคลและเป็นสิ่งที่ผู้ควบคุมต้องพิสูจน์ได้
+  {
+    id: "consent-record",
+    test: /consent|pdpa_?(accepted|agreed)|terms_?accepted|opt_?in/,
+    category: "behavioral",
+    confidence: 0.75
+  },
+  // การเงิน
+  {
+    id: "bank",
+    test: /bank_?(account|acct|no|number)|account_?(no|number)|iban|swift|promptpay|card_?(no|number)|credit_?card/,
+    category: "financial",
+    confidence: 0.9
+  },
+  {
+    id: "money-person",
+    test: /salary|wage|income|payroll|compensation|bonus|allowance|provident|social_?security_?fund|เงินเดือน|รายได้/,
+    category: "financial",
+    confidence: 0.85
+  },
+  // การจ้างงานและการศึกษา
+  {
+    /** HN ของโรงพยาบาลคือตัวระบุผู้ป่วยโดยตรง ไม่ใช่รหัสระบบทั่วไป */
+    id: "patient-number",
+    test: /^hn$|^mrn$|hospital_?(no|number)|patient_?(no|id|code|number)/,
+    category: "identity",
+    confidence: 0.85
+  },
+  {
+    /** เลขใบอนุญาตประกอบวิชาชีพผูกกับตัวบุคคลและค้นย้อนกลับได้ */
+    id: "professional-licence",
+    test: /licen[cs]e_?(no|number|id)$|licen[cs]e_?number|practitioner_?(no|id)/,
+    category: "government_id",
+    confidence: 0.8
+  },
+  {
+    id: "employee-code",
+    test: /^emp(loyee)?_?(id|no|code)$|staff_?(id|no|code)|badge_?(id|no)/,
+    category: "employment",
+    confidence: 0.8
+  },
+  {
+    id: "employment",
+    test: /job_?title|^position$|^department$|hire_?date|resign|termination|probation|^start_?date$|^end_?date$|employment_?(type|status)/,
+    category: "employment",
+    confidence: 0.7,
+    gate: "person"
+  },
+  {
+    id: "education",
+    test: /education|degree|university|graduat|gpa|transcript/,
+    category: "education",
+    confidence: 0.7,
+    gate: "person"
+  },
+  // ตำแหน่งที่อยู่ — เฉพาะเมื่อผูกกับคน ไม่ใช่พิกัดของสถานที่
+  {
+    id: "geo",
+    test: /^(lat|lng|lon)$|latitude|longitude|geo_?(point|location)|gps|last_?location/,
+    category: "location",
+    confidence: 0.7,
+    gate: "person"
+  },
+  // อุปกรณ์และการเชื่อมต่อ
+  {
+    id: "device",
+    test: /ip_?address|^ip$|user_?agent|device_?(id|token|uuid)|mac_?address|fingerprint|advertising_?id|push_?token/,
+    category: "device",
+    confidence: 0.8
+  },
+  {
+    id: "behavioral",
+    test: /last_?(login|seen|active)|login_?(at|count|history)|visited|clickstream/,
+    category: "behavioral",
+    confidence: 0.6,
+    gate: "person"
+  },
+  // ภาพและสื่อ
+  {
+    id: "media",
+    test: /avatar|photo|picture|selfie|profile_?image|image_?(url|key)|voice_?(note|clip)|recording/,
+    category: "media",
+    confidence: 0.7,
+    gate: "person"
+  },
+  // ยานพาหนะ
+  {
+    id: "plate",
+    test: /license_?plate|plate_?(no|number)|ทะเบียนรถ|vehicle_?(reg|no)|driver_?license/,
+    category: "vehicle",
+    confidence: 0.85
+  },
+  // ข้อมูลยืนยันตัวตน
+  {
+    id: "credential",
+    test: /password|passwd|^pwd|otp|reset_?token|refresh_?token|api_?key|^secret/,
+    category: "credential",
+    confidence: 0.85
+  },
+  // ข้อมูลอ่อนไหวตามมาตรา 26
+  {
+    id: "health",
+    test: /health|medical|diagnos|allerg|blood_?(type|group)|prescription|treatment|illness|chronic|comorbid|symptom|vaccin|immuni|surgery|therapy|สุขภาพ|โรคประจำตัว/,
+    category: "health",
+    confidence: 0.9
+  },
+  { id: "disability", test: /disabilit|handicap|impairment|พิการ/, category: "disability", confidence: 0.9 },
+  { id: "religion", test: /religio|ศาสนา|faith_?group/, category: "belief_religion", confidence: 0.9 },
+  {
+    id: "race",
+    test: /ethnic|race$|nationality|เชื้อชาติ|สัญชาติ/,
+    category: "race_ethnicity",
+    confidence: 0.8
+  },
+  {
+    id: "criminal",
+    test: /criminal|conviction|offence|offense_?record|ประวัติอาชญากรรม/,
+    category: "criminal_record",
+    confidence: 0.9
+  },
+  { id: "union", test: /union_?(member|id)|สหภาพ/, category: "union", confidence: 0.85 },
+  {
+    id: "biometric",
+    test: /biometric|face_?(embedding|template|descriptor)|iris|fingerprint_?template|voice_?print/,
+    category: "biometric",
+    confidence: 0.9
+  },
+  { id: "genetic", test: /genetic|dna_?|genome/, category: "genetic", confidence: 0.9 },
+  /**
+   * ก้อน Json บนตารางที่เกี่ยวกับคนคือจุดบอดที่ใหญ่ที่สุด
+   * ชื่อฟิลด์ไม่บอกอะไรเลยว่าข้างในมีอะไร และของจริงมักมีข้อมูลภาษี เงินกู้ หรือผลประเมิน
+   * จึงเสนอด้วยความเชื่อมั่นต่ำเพื่อบังคับให้คนเปิดไปดู
+   */
+  {
+    id: "opaque-json",
+    test: /.*/,
+    typeTest: /^Json(\[\])?$/,
+    category: "behavioral",
+    confidence: 0.35,
+    gate: "person"
+  }
+];
+function normalize(name) {
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase().replace(/[\s-]+/g, "_");
+}
+function passesGate(gate, container) {
+  switch (gate) {
+    case "always":
+      return true;
+    case "person":
+      return PERSON_CONTAINER.test(container);
+    case "person-tail":
+      return PERSON_TAIL.test(container);
+  }
+}
+function guessCategory(field) {
+  if (field.isRelation)
+    return null;
+  const name = normalize(field.source.field);
+  if (NOT_A_VALUE.test(name))
+    return null;
+  const container = field.source.container;
+  const type = field.source.type ?? "";
+  const penalty = JURISTIC_CONTAINER.test(container) ? JURISTIC_PENALTY : 1;
+  let best = null;
+  for (const rule of RULES) {
+    if (!passesGate(rule.gate ?? "always", container))
+      continue;
+    if (rule.typeTest !== void 0 && !rule.typeTest.test(type))
+      continue;
+    if (!rule.test.test(name))
+      continue;
+    const confidence = Math.round(rule.confidence * penalty * 100) / 100;
+    if (best === null || confidence > best.confidence) {
+      best = { ruleId: rule.id, category: rule.category, confidence };
+    }
+  }
+  return best;
+}
+var RULE_COUNT = RULES.length;
+
+// ../core/dist/reconcile.js
+function reconcile(existing, sourceFields, options) {
+  const useHeuristic = options.useHeuristic ?? true;
+  const changes = [];
+  const problems = [];
+  const byId = /* @__PURE__ */ new Map();
+  for (const f of existing.fields)
+    byId.set(f.id, f);
+  const purposeKeys = new Set(existing.purposes.map((p) => p.key));
+  const seen = /* @__PURE__ */ new Set();
+  const added = [];
+  for (const src of sourceFields) {
+    if (src.isRelation)
+      continue;
+    seen.add(src.id);
+    const prev = byId.get(src.id);
+    const ann = src.annotation ?? null;
+    if (ann === null && prev === void 0) {
+      if (!useHeuristic)
+        continue;
+      const hit = guessCategory(src);
+      if (hit === null)
+        continue;
+      added.push({
+        id: src.id,
+        status: "unmarked",
+        source: src.source,
+        category: hit.category,
+        detectedBy: [`heuristic:${hit.ruleId}`],
+        confidence: hit.confidence,
+        firstSeen: options.today
+      });
+      changes.push({
+        id: src.id,
+        kind: "added",
+        detail: `\u0E15\u0E31\u0E27\u0E40\u0E14\u0E32\u0E40\u0E2A\u0E19\u0E2D\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19 ${hit.category}`
+      });
+      continue;
+    }
+    const next = prev ? { ...prev, source: src.source } : {
+      id: src.id,
+      status: "unmarked",
+      source: src.source,
+      firstSeen: options.today
+    };
+    if (prev?.orphaned) {
+      delete next.orphaned;
+      changes.push({ id: src.id, kind: "restored", detail: "\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07" });
+    }
+    if (ann !== null) {
+      applyAnnotation(next, src, ann, problems, purposeKeys);
+    }
+    if (prev === void 0) {
+      added.push(next);
+      changes.push({
+        id: src.id,
+        kind: "added",
+        detail: ann ? `\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E44\u0E27\u0E49\u0E43\u0E19\u0E42\u0E04\u0E49\u0E14\u0E41\u0E25\u0E49\u0E27 (${next.status})` : void 0
+      });
+    } else {
+      recordDiff(prev, next, changes);
+      byId.set(src.id, next);
+    }
+  }
+  const scanned = new Set(options.scannedKinds);
+  for (const [id, field] of byId) {
+    if (seen.has(id))
+      continue;
+    if (!scanned.has(field.source.kind))
+      continue;
+    if (field.orphaned)
+      continue;
+    byId.set(id, { ...field, orphaned: true });
+    changes.push({ id, kind: "orphaned", detail: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E41\u0E25\u0E49\u0E27" });
+  }
+  const merged = existing.fields.map((f) => byId.get(f.id) ?? f);
+  added.sort((a, b) => a.id.localeCompare(b.id));
+  merged.push(...added);
+  for (const field of merged) {
+    validateField(field, problems, purposeKeys);
+  }
+  return { catalog: { ...existing, fields: merged }, changes, problems };
+}
+function applyAnnotation(next, src, ann, problems, purposeKeys) {
+  if (ann.kind === "not-pii") {
+    next.status = "not-pii";
+    delete next.deferredOn;
+    if (ann.reason !== void 0)
+      next.reason = ann.reason;
+    delete next.category;
+    delete next.purposes;
+    delete next.retention;
+    delete next.detectedBy;
+    delete next.confidence;
+    if (next.reason === void 0) {
+      problems.push({
+        level: "warning",
+        id: src.id,
+        message: "@not-pii \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E43\u0E2B\u0E49\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E44\u0E27\u0E49 \u2014 \u0E43\u0E2A\u0E48 reason= \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E2B\u0E49\u0E04\u0E19\u0E15\u0E23\u0E27\u0E08\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E44\u0E14\u0E49",
+        file: src.source.file,
+        line: src.source.line
+      });
+    }
+    return;
+  }
+  next.status = "marked";
+  delete next.reason;
+  delete next.deferredOn;
+  delete next.detectedBy;
+  delete next.confidence;
+  if (ann.category !== void 0)
+    next.category = ann.category;
+  if (ann.purposes !== void 0)
+    next.purposes = ann.purposes;
+  if (ann.retention !== void 0)
+    next.retention = ann.retention;
+  if (next.category === void 0) {
+    problems.push({
+      level: "warning",
+      id: src.id,
+      message: "@pii \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E30\u0E1A\u0E38 category",
+      file: src.source.file,
+      line: src.source.line
+    });
+  }
+  for (const key of next.purposes ?? []) {
+    if (!purposeKeys.has(key)) {
+      problems.push({
+        level: "error",
+        id: src.id,
+        message: `\u0E2D\u0E49\u0E32\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C "${key}" \u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01`,
+        file: src.source.file,
+        line: src.source.line
+      });
+    }
+  }
+}
+function validateField(field, problems, purposeKeys) {
+  if (field.status !== "marked")
+    return;
+  if (field.category !== void 0 && !isKnownCategory(field.category)) {
+    problems.push({
+      level: "warning",
+      id: field.id,
+      message: `\u0E2B\u0E21\u0E27\u0E14 "${field.category}" \u0E44\u0E21\u0E48\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E0A\u0E38\u0E14\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19`,
+      file: field.source.file,
+      line: field.source.line
+    });
+  }
+  if ((field.purposes ?? []).length === 0) {
+    problems.push({
+      level: "error",
+      id: field.id,
+      message: "\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E41\u0E25\u0E49\u0E27\u0E41\u0E15\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C \u2014 \u0E21.39(2) \u0E1A\u0E31\u0E07\u0E04\u0E31\u0E1A",
+      file: field.source.file,
+      line: field.source.line
+    });
+    return;
+  }
+  for (const key of field.purposes ?? []) {
+    if (!purposeKeys.has(key)) {
+      problems.push({
+        level: "error",
+        id: field.id,
+        message: `\u0E2D\u0E49\u0E32\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C "${key}" \u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01`,
+        file: field.source.file,
+        line: field.source.line
+      });
+    }
+  }
+}
+function recordDiff(prev, next, changes) {
+  if (prev.status !== next.status) {
+    const kind = next.status === "marked" ? "marked" : next.status === "not-pii" ? "not-pii" : next.status === "deferred" ? "deferred" : "unmarked";
+    changes.push({ id: next.id, kind, detail: `${prev.status} \u2192 ${next.status}` });
+    return;
+  }
+  if (prev.category !== next.category) {
+    changes.push({
+      id: next.id,
+      kind: "reclassified",
+      detail: `${prev.category ?? "\u2014"} \u2192 ${next.category ?? "\u2014"}`
+    });
+  }
+}
+function applyBaseline(catalog, today2) {
+  const moved = [];
+  const fields = catalog.fields.map((field) => {
+    if (field.status !== "unmarked" || field.orphaned === true)
+      return field;
+    moved.push(field.id);
+    return { ...field, status: "deferred", deferredOn: today2 };
+  });
+  return { catalog: { ...catalog, fields }, moved };
+}
+function summarize(catalog) {
+  const summary = {
+    total: 0,
+    marked: 0,
+    unmarked: 0,
+    deferred: 0,
+    notPii: 0,
+    sensitive: 0,
+    orphaned: 0
+  };
+  for (const f of catalog.fields) {
+    summary.total += 1;
+    if (f.orphaned)
+      summary.orphaned += 1;
+    if (f.status === "marked")
+      summary.marked += 1;
+    else if (f.status === "unmarked")
+      summary.unmarked += 1;
+    else if (f.status === "deferred")
+      summary.deferred += 1;
+    else
+      summary.notPii += 1;
+    if (f.status !== "not-pii" && isSensitiveCategory(f.category))
+      summary.sensitive += 1;
+  }
+  return summary;
+}
+
 // ../core/dist/catalog.js
+var import_yaml = __toESM(require_dist(), 1);
+var HEADER = `# \u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25 (Arak)
+#
+# \u0E44\u0E1F\u0E25\u0E4C\u0E19\u0E35\u0E49\u0E04\u0E37\u0E2D\u0E41\u0E2B\u0E25\u0E48\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E40\u0E1E\u0E35\u0E22\u0E07\u0E17\u0E35\u0E48\u0E40\u0E14\u0E35\u0E22\u0E27\u0E27\u0E48\u0E32\u0E23\u0E30\u0E1A\u0E1A\u0E19\u0E35\u0E49\u0E40\u0E01\u0E47\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2D\u0E30\u0E44\u0E23\u0E1A\u0E49\u0E32\u0E07
+# \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2D\u0E30\u0E44\u0E23 \u0E14\u0E49\u0E27\u0E22\u0E10\u0E32\u0E19\u0E17\u0E32\u0E07\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22\u0E43\u0E14 \u0E41\u0E25\u0E30\u0E40\u0E01\u0E47\u0E1A\u0E44\u0E27\u0E49\u0E19\u0E32\u0E19\u0E40\u0E17\u0E48\u0E32\u0E44\u0E23
+# \u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48\u0E04\u0E37\u0E2D\u0E2A\u0E34\u0E48\u0E07\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E2D\u0E2D\u0E01\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E30\u0E21\u0E27\u0E25\u0E1C\u0E25 (RoPA) \u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39
+#
+# \u0E2A\u0E48\u0E27\u0E19 controller / purposes / access / securityMeasures \u0E40\u0E1B\u0E47\u0E19\u0E02\u0E2D\u0E07\u0E04\u0E19\u0E25\u0E49\u0E27\u0E19 \u0E46
+# \u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E08\u0E30\u0E44\u0E21\u0E48\u0E41\u0E01\u0E49\u0E43\u0E2B\u0E49 \u0E41\u0E25\u0E30\u0E04\u0E2D\u0E21\u0E40\u0E21\u0E19\u0E15\u0E4C\u0E17\u0E35\u0E48\u0E40\u0E02\u0E35\u0E22\u0E19\u0E44\u0E27\u0E49\u0E08\u0E30\u0E44\u0E21\u0E48\u0E2B\u0E32\u0E22
+# \u0E2A\u0E48\u0E27\u0E19 fields \u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E14\u0E39\u0E41\u0E25\u0E43\u0E2B\u0E49\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E40\u0E2A\u0E21\u0E2D \u0E41\u0E15\u0E48\u0E08\u0E30\u0E44\u0E21\u0E48\u0E25\u0E1A\u0E2D\u0E30\u0E44\u0E23\u0E17\u0E34\u0E49\u0E07\u0E40\u0E2D\u0E07
+`;
+var FIELD_KEYS = [
+  "id",
+  "status",
+  "category",
+  "purposes",
+  "retention",
+  "reason",
+  "notes",
+  "confidence",
+  "detectedBy",
+  "orphaned",
+  "firstSeen",
+  "deferredOn",
+  "source"
+];
 function parseCatalog(text) {
   const problems = [];
   const raw = (0, import_yaml.parseDocument)(text).toJS({ maxAliasCount: 100 });
@@ -8095,52 +8139,177 @@ function compact(field) {
   }
   return out;
 }
-var import_yaml, HEADER, FIELD_KEYS;
-var init_catalog = __esm({
-  "../core/dist/catalog.js"() {
-    "use strict";
-    import_yaml = __toESM(require_dist(), 1);
-    init_types();
-    HEADER = `# \u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25 (Arak)
-#
-# \u0E44\u0E1F\u0E25\u0E4C\u0E19\u0E35\u0E49\u0E04\u0E37\u0E2D\u0E41\u0E2B\u0E25\u0E48\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E40\u0E1E\u0E35\u0E22\u0E07\u0E17\u0E35\u0E48\u0E40\u0E14\u0E35\u0E22\u0E27\u0E27\u0E48\u0E32\u0E23\u0E30\u0E1A\u0E1A\u0E19\u0E35\u0E49\u0E40\u0E01\u0E47\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2D\u0E30\u0E44\u0E23\u0E1A\u0E49\u0E32\u0E07
-# \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2D\u0E30\u0E44\u0E23 \u0E14\u0E49\u0E27\u0E22\u0E10\u0E32\u0E19\u0E17\u0E32\u0E07\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22\u0E43\u0E14 \u0E41\u0E25\u0E30\u0E40\u0E01\u0E47\u0E1A\u0E44\u0E27\u0E49\u0E19\u0E32\u0E19\u0E40\u0E17\u0E48\u0E32\u0E44\u0E23
-# \u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48\u0E04\u0E37\u0E2D\u0E2A\u0E34\u0E48\u0E07\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E2D\u0E2D\u0E01\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E30\u0E21\u0E27\u0E25\u0E1C\u0E25 (RoPA) \u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39
-#
-# \u0E2A\u0E48\u0E27\u0E19 controller / purposes / access / securityMeasures \u0E40\u0E1B\u0E47\u0E19\u0E02\u0E2D\u0E07\u0E04\u0E19\u0E25\u0E49\u0E27\u0E19 \u0E46
-# \u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E08\u0E30\u0E44\u0E21\u0E48\u0E41\u0E01\u0E49\u0E43\u0E2B\u0E49 \u0E41\u0E25\u0E30\u0E04\u0E2D\u0E21\u0E40\u0E21\u0E19\u0E15\u0E4C\u0E17\u0E35\u0E48\u0E40\u0E02\u0E35\u0E22\u0E19\u0E44\u0E27\u0E49\u0E08\u0E30\u0E44\u0E21\u0E48\u0E2B\u0E32\u0E22
-# \u0E2A\u0E48\u0E27\u0E19 fields \u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E14\u0E39\u0E41\u0E25\u0E43\u0E2B\u0E49\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E40\u0E2A\u0E21\u0E2D \u0E41\u0E15\u0E48\u0E08\u0E30\u0E44\u0E21\u0E48\u0E25\u0E1A\u0E2D\u0E30\u0E44\u0E23\u0E17\u0E34\u0E49\u0E07\u0E40\u0E2D\u0E07
-`;
-    FIELD_KEYS = [
-      "id",
-      "status",
-      "category",
-      "purposes",
-      "retention",
-      "reason",
-      "notes",
-      "confidence",
-      "detectedBy",
-      "orphaned",
-      "firstSeen",
-      "deferredOn",
-      "source"
-    ];
-  }
-});
+function starterCatalog(projectName) {
+  return {
+    version: 1,
+    controller: {
+      name: projectName,
+      contact: "dpo@example.com"
+    },
+    purposes: [
+      {
+        key: "account",
+        label: "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E41\u0E25\u0E30\u0E14\u0E39\u0E41\u0E25\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49",
+        legalBasis: "contract",
+        retention: "P1Y",
+        description: "\u0E43\u0E0A\u0E49\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E15\u0E31\u0E27\u0E15\u0E19\u0E41\u0E25\u0E30\u0E43\u0E2B\u0E49\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23\u0E15\u0E32\u0E21\u0E2A\u0E31\u0E0D\u0E0D\u0E32\u0E17\u0E35\u0E48\u0E17\u0E33\u0E01\u0E31\u0E1A\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49"
+      }
+    ],
+    access: {
+      requestChannel: "dpo@example.com",
+      whoCanAccess: ["\u0E17\u0E35\u0E21\u0E17\u0E35\u0E48\u0E14\u0E39\u0E41\u0E25\u0E23\u0E30\u0E1A\u0E1A\u0E19\u0E35\u0E49\u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19"]
+    },
+    securityMeasures: [
+      "\u0E40\u0E02\u0E49\u0E32\u0E23\u0E2B\u0E31\u0E2A\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07\u0E2A\u0E48\u0E07 (TLS) \u0E41\u0E25\u0E30\u0E40\u0E02\u0E49\u0E32\u0E23\u0E2B\u0E31\u0E2A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E1E\u0E31\u0E01\u0E2D\u0E22\u0E39\u0E48",
+      "\u0E08\u0E33\u0E01\u0E31\u0E14\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07\u0E15\u0E32\u0E21\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48 \u0E41\u0E25\u0E30\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E01\u0E32\u0E23\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07"
+    ],
+    fields: []
+  };
+}
 
-// ../core/dist/index.js
-var init_dist = __esm({
-  "../core/dist/index.js"() {
-    "use strict";
-    init_types();
-    init_reconcile();
-    init_catalog();
-    init_heuristic();
+// ../cli/src/config.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+function globToRegExp(pattern) {
+  let out = "";
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i] ?? "";
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        if (pattern[i + 2] === "/") {
+          out += "(?:.*/)?";
+          i += 2;
+        } else {
+          out += ".*";
+          i += 1;
+        }
+      } else {
+        out += "[^/]*";
+      }
+      continue;
+    }
+    if (ch === "?") {
+      out += "[^/]";
+      continue;
+    }
+    out += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
   }
-});
+  return new RegExp(`^${out}$`);
+}
+function matchesAny(path, patterns) {
+  return patterns.some((pattern) => {
+    if (!/[*?]/.test(pattern)) {
+      return path === pattern || path.startsWith(`${pattern.replace(/\/$/, "")}/`);
+    }
+    return globToRegExp(pattern).test(path);
+  });
+}
+var CONFIG_FILE = "arak.config.yaml";
+var DEFAULT_CATALOG = "pii-catalog.yaml";
+var SKIP_DIRS = /* @__PURE__ */ new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "out",
+  "coverage",
+  ".next",
+  ".turbo",
+  ".cache",
+  "generated",
+  "migrations",
+  "vendor",
+  "tmp"
+]);
+var MAX_DEPTH = 6;
+function defaultConfig(prismaFiles) {
+  return { catalog: DEFAULT_CATALOG, sources: { prisma: prismaFiles }, scan: { ignore: [] } };
+}
+function loadConfig(root) {
+  const path = join(root, CONFIG_FILE);
+  let text;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return defaultConfig(discoverPrismaSchemas(root));
+  }
+  const raw = (0, import_yaml2.parse)(text);
+  const obj = raw ?? {};
+  const sources = obj["sources"] ?? {};
+  const prisma = Array.isArray(sources["prisma"]) ? sources["prisma"].map(String) : [];
+  const scan = obj["scan"] ?? {};
+  return {
+    catalog: typeof obj["catalog"] === "string" ? obj["catalog"] : DEFAULT_CATALOG,
+    sources: { prisma: prisma.length > 0 ? prisma : discoverPrismaSchemas(root) },
+    scan: { ignore: Array.isArray(scan["ignore"]) ? scan["ignore"].map(String) : [] }
+  };
+}
+function discoverPrismaSchemas(root) {
+  const found = [];
+  const walk = (dir, depth) => {
+    if (depth > MAX_DEPTH) return;
+    let entries;
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.startsWith(".") && entry !== ".") continue;
+      const full = join(dir, entry);
+      let isDir = false;
+      try {
+        isDir = statSync(full).isDirectory();
+      } catch {
+        continue;
+      }
+      if (isDir) {
+        if (SKIP_DIRS.has(entry)) continue;
+        walk(full, depth + 1);
+      } else if (entry.endsWith(".prisma")) {
+        found.push(relative(root, full).split(sep).join("/"));
+      }
+    }
+  };
+  walk(root, 0);
+  return found.sort();
+}
+function serializeConfig(config) {
+  const lines = [
+    "# \u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32 Arak",
+    "#",
+    "# catalog \u2014 \u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E02\u0E2D\u0E07\u0E42\u0E1B\u0E23\u0E40\u0E08\u0E01\u0E15\u0E4C\u0E19\u0E35\u0E49",
+    "# sources \u2014 \u0E1A\u0E2D\u0E01\u0E27\u0E48\u0E32\u0E43\u0E2B\u0E49\u0E44\u0E1B\u0E2D\u0E48\u0E32\u0E19\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E08\u0E32\u0E01\u0E17\u0E35\u0E48\u0E44\u0E2B\u0E19\u0E1A\u0E49\u0E32\u0E07",
+    "",
+    `catalog: ${config.catalog}`,
+    "",
+    "sources:",
+    "  prisma:"
+  ];
+  if (config.sources.prisma.length === 0) {
+    lines.push("    [] # \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E44\u0E1F\u0E25\u0E4C .prisma \u2014 \u0E43\u0E2A\u0E48\u0E1E\u0E32\u0E18\u0E40\u0E2D\u0E07\u0E44\u0E14\u0E49");
+  } else {
+    for (const file of config.sources.prisma) lines.push(`    - ${file}`);
+  }
+  lines.push(
+    "",
+    "# \u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48 arak scan \u0E44\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E14\u0E39 \u0E40\u0E0A\u0E48\u0E19\u0E40\u0E17\u0E2A\u0E15\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E31\u0E49\u0E07\u0E43\u0E08\u0E43\u0E2A\u0E48\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E23\u0E39\u0E1B\u0E23\u0E48\u0E32\u0E07\u0E40\u0E2B\u0E21\u0E37\u0E2D\u0E19\u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07",
+    "scan:",
+    "  ignore:",
+    "    []"
+  );
+  return `${lines.join("\n")}
+`;
+}
+
+// ../cli/src/project.ts
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import { join as join2 } from "node:path";
 
 // ../prisma/dist/annotation.js
+var TAG = /@(not-)?pii\b\s*(?:\(([\s\S]*?)\))?/;
+var KNOWN_KEYS = /* @__PURE__ */ new Set(["category", "purpose", "purposes", "retention", "reason"]);
 function parseAnnotation(docLines) {
   const errors = [];
   const text = docLines.join("\n");
@@ -8234,16 +8403,10 @@ function unquote(value) {
   }
   return value;
 }
-var TAG, KNOWN_KEYS;
-var init_annotation = __esm({
-  "../prisma/dist/annotation.js"() {
-    "use strict";
-    TAG = /@(not-)?pii\b\s*(?:\(([\s\S]*?)\))?/;
-    KNOWN_KEYS = /* @__PURE__ */ new Set(["category", "purpose", "purposes", "retention", "reason"]);
-  }
-});
 
 // ../prisma/dist/parse.js
+var BLOCK_OPEN = /^(model|view|type|enum|generator|datasource)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/;
+var FIELD = /^([A-Za-z_][A-Za-z0-9_]*)\s+(Unsupported\("[^"]*"\)|[A-Za-z_][A-Za-z0-9_]*)(\[\])?(\?)?\s*(.*)$/;
 function splitTrailingComment(line) {
   let inString = false;
   for (let i = 0; i < line.length; i += 1) {
@@ -8343,6 +8506,18 @@ function parsePrismaSchema(text, file) {
   }
   return { file, blocks };
 }
+var SCALAR_TYPES = /* @__PURE__ */ new Set([
+  "String",
+  "Boolean",
+  "Int",
+  "BigInt",
+  "Float",
+  "Decimal",
+  "DateTime",
+  "Json",
+  "Bytes"
+]);
+var RELATION_FIELDS = /@relation\s*\([^)]*\bfields\s*:\s*\[([^\]]*)\]/;
 function relationScalarNames(block) {
   const names = /* @__PURE__ */ new Set();
   for (const field of block.fields) {
@@ -8371,28 +8546,9 @@ function isRelationType(typeName, blockKinds) {
     return false;
   return kind === "model" || kind === "view" || kind === "type";
 }
-var BLOCK_OPEN, FIELD, SCALAR_TYPES, RELATION_FIELDS;
-var init_parse = __esm({
-  "../prisma/dist/parse.js"() {
-    "use strict";
-    BLOCK_OPEN = /^(model|view|type|enum|generator|datasource)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/;
-    FIELD = /^([A-Za-z_][A-Za-z0-9_]*)\s+(Unsupported\("[^"]*"\)|[A-Za-z_][A-Za-z0-9_]*)(\[\])?(\?)?\s*(.*)$/;
-    SCALAR_TYPES = /* @__PURE__ */ new Set([
-      "String",
-      "Boolean",
-      "Int",
-      "BigInt",
-      "Float",
-      "Decimal",
-      "DateTime",
-      "Json",
-      "Bytes"
-    ]);
-    RELATION_FIELDS = /@relation\s*\([^)]*\bfields\s*:\s*\[([^\]]*)\]/;
-  }
-});
 
 // ../prisma/dist/index.js
+var SOURCE_KIND = "prisma";
 function readPrismaSchemas(inputs) {
   const schemas = inputs.map((input) => parsePrismaSchema(input.text, input.file));
   const blockKinds = /* @__PURE__ */ new Map();
@@ -8448,111 +8604,10 @@ function readPrismaSchemas(inputs) {
   }
   return { fields, problems };
 }
-var SOURCE_KIND;
-var init_dist2 = __esm({
-  "../prisma/dist/index.js"() {
-    "use strict";
-    init_annotation();
-    init_parse();
-    init_parse();
-    init_annotation();
-    SOURCE_KIND = "prisma";
-  }
-});
 
-// ../cli/dist/config.js
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
-function defaultConfig(prismaFiles) {
-  return { catalog: DEFAULT_CATALOG, sources: { prisma: prismaFiles }, scan: { ignore: [] } };
-}
-function loadConfig(root) {
-  const path = join(root, CONFIG_FILE);
-  let text;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch {
-    return defaultConfig(discoverPrismaSchemas(root));
-  }
-  const raw = (0, import_yaml2.parse)(text);
-  const obj = raw ?? {};
-  const sources = obj["sources"] ?? {};
-  const prisma = Array.isArray(sources["prisma"]) ? sources["prisma"].map(String) : [];
-  const scan = obj["scan"] ?? {};
-  return {
-    catalog: typeof obj["catalog"] === "string" ? obj["catalog"] : DEFAULT_CATALOG,
-    sources: { prisma: prisma.length > 0 ? prisma : discoverPrismaSchemas(root) },
-    scan: { ignore: Array.isArray(scan["ignore"]) ? scan["ignore"].map(String) : [] }
-  };
-}
-function discoverPrismaSchemas(root) {
-  const found = [];
-  const walk = (dir, depth) => {
-    if (depth > MAX_DEPTH)
-      return;
-    let entries;
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (entry.startsWith(".") && entry !== ".")
-        continue;
-      const full = join(dir, entry);
-      let isDir = false;
-      try {
-        isDir = statSync(full).isDirectory();
-      } catch {
-        continue;
-      }
-      if (isDir) {
-        if (SKIP_DIRS.has(entry))
-          continue;
-        walk(full, depth + 1);
-      } else if (entry.endsWith(".prisma")) {
-        found.push(relative(root, full).split(sep).join("/"));
-      }
-    }
-  };
-  walk(root, 0);
-  return found.sort();
-}
-var import_yaml2, CONFIG_FILE, DEFAULT_CATALOG, SKIP_DIRS, MAX_DEPTH;
-var init_config = __esm({
-  "../cli/dist/config.js"() {
-    "use strict";
-    import_yaml2 = __toESM(require_dist(), 1);
-    CONFIG_FILE = "arak.config.yaml";
-    DEFAULT_CATALOG = "pii-catalog.yaml";
-    SKIP_DIRS = /* @__PURE__ */ new Set([
-      "node_modules",
-      ".git",
-      "dist",
-      "build",
-      "out",
-      "coverage",
-      ".next",
-      ".turbo",
-      ".cache",
-      "generated",
-      "migrations",
-      "vendor",
-      "tmp"
-    ]);
-    MAX_DEPTH = 6;
-  }
-});
-
-// ../cli/dist/project.js
-var project_exports = {};
-__export(project_exports, {
-  ProjectError: () => ProjectError,
-  loadProject: () => loadProject,
-  today: () => today
-});
-import { existsSync, readFileSync as readFileSync2 } from "node:fs";
-import { join as join2 } from "node:path";
+// ../cli/src/project.ts
+var ProjectError = class extends Error {
+};
 function loadProject(root, options) {
   const config = loadConfig(root);
   const catalogPath = join2(root, config.catalog);
@@ -8597,47 +8652,332 @@ function loadProject(root, options) {
 function today() {
   return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 }
-var ProjectError;
-var init_project = __esm({
-  "../cli/dist/project.js"() {
-    "use strict";
-    init_dist();
-    init_dist2();
-    init_config();
-    ProjectError = class extends Error {
-    };
+
+// ../cli/src/scan.ts
+import { readdirSync as readdirSync2, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
+import { join as join3, relative as relative2, sep as sep2 } from "node:path";
+
+// ../detect-th/dist/thai-id.js
+function thaiIdCheckDigit(first12) {
+  if (!/^[0-9]{12}$/.test(first12))
+    return -1;
+  let sum = 0;
+  for (let i = 0; i < 12; i += 1) {
+    sum += Number(first12[i]) * (13 - i);
   }
-});
+  return (11 - sum % 11) % 10;
+}
+function isValidThaiId(value) {
+  const digits2 = value.replace(/[\s-]/g, "");
+  if (!/^[0-9]{13}$/.test(digits2))
+    return false;
+  if (/^(\d)\1{12}$/.test(digits2))
+    return false;
+  return thaiIdCheckDigit(digits2.slice(0, 12)) === Number(digits2[12]);
+}
 
-// src/on-stop.mjs
-import { writeFileSync } from "node:fs";
+// ../detect-th/dist/detectors.js
+var digits = (value) => value.replace(/\D/g, "");
+function passesLuhn(value) {
+  const d = digits(value);
+  if (d.length < 13 || d.length > 19)
+    return false;
+  let sum = 0;
+  let double = false;
+  for (let i = d.length - 1; i >= 0; i -= 1) {
+    let n = Number(d[i]);
+    if (double) {
+      n *= 2;
+      if (n > 9)
+        n -= 9;
+    }
+    sum += n;
+    double = !double;
+  }
+  return sum % 10 === 0;
+}
+function isThaiPhone(value) {
+  let d = digits(value);
+  if (d.startsWith("66"))
+    d = `0${d.slice(2)}`;
+  if (!/^0[2-9]\d{7,8}$/.test(d))
+    return false;
+  if (/^0[689]/.test(d))
+    return d.length === 10;
+  return d.length === 9 || d.length === 10;
+}
+var THAI = "\\u0E00-\\u0E7F";
+var DETECTORS = [
+  {
+    type: "thai_national_id",
+    category: "government_id",
+    // สิบสามหลัก คั่นด้วยขีดหรือเว้นวรรคได้ ตามที่พิมพ์บนบัตรจริง
+    pattern: /(?<!\d)(?:\d[- ]?){12}\d(?!\d)/g,
+    baseConfidence: 0.95,
+    validate: isValidThaiId,
+    context: /บัตรประชาชน|ประจำตัวประชาชน|เลขประจำตัว|national\s*id|citizen\s*id|id\s*card/i,
+    contextConfidence: 0.99
+  },
+  {
+    type: "thai_id_laser",
+    category: "government_id",
+    pattern: /(?<![A-Z0-9])[A-Z]{2}\d[- ]?\d{7}[- ]?\d{2}(?![A-Z0-9])/g,
+    baseConfidence: 0.6,
+    context: /เลเซอร์|laser|หลังบัตร/i,
+    contextConfidence: 0.9
+  },
+  {
+    type: "thai_phone",
+    category: "contact",
+    pattern: /(?<![\d+])(?:\+?66[- ]?|0)\d(?:[- ]?\d){7,8}(?!\d)/g,
+    baseConfidence: 0.75,
+    validate: isThaiPhone,
+    context: /โทร|เบอร์|มือถือ|ติดต่อ|tel|phone|mobile|contact/i,
+    contextConfidence: 0.92
+  },
+  {
+    type: "email",
+    category: "contact",
+    pattern: /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z])/g,
+    baseConfidence: 0.95
+  },
+  {
+    type: "thai_licence_plate",
+    category: "vehicle",
+    // เลขนำหน้าไม่เกินสองตัว ตามด้วยพยัญชนะไทยสองตัว แล้วตัวเลขหนึ่งถึงสี่หลัก
+    pattern: new RegExp(`(?<![${THAI}0-9A-Za-z])[0-9]{0,2}[\\u0E01-\\u0E2E]{2}[ -]?[0-9]{1,4}(?![${THAI}0-9])`, "g"),
+    baseConfidence: 0.55,
+    context: /ทะเบียน|ป้ายทะเบียน|licen[cs]e\s*plate|plate|รถบรรทุก|หัวลาก|หางพ่วง/i,
+    contextConfidence: 0.88
+  },
+  {
+    type: "thai_postal_code",
+    category: "contact",
+    pattern: /(?<!\d)\d{5}(?!\d)/g,
+    baseConfidence: 0.7,
+    requiresContext: true,
+    context: /ไปรษณีย์|รหัสไปรษณีย์|postal|post\s*code|zip/i,
+    contextConfidence: 0.85
+  },
+  {
+    type: "passport",
+    category: "government_id",
+    pattern: /(?<![A-Z0-9])[A-Z]{1,2}\d{6,7}(?![A-Z0-9])/g,
+    baseConfidence: 0.5,
+    requiresContext: true,
+    context: /passport|หนังสือเดินทาง|พาสปอร์ต/i,
+    contextConfidence: 0.9
+  },
+  {
+    type: "thai_person_name",
+    category: "identity",
+    // คำนำหน้าคือสัญญาณที่เชื่อถือได้ที่สุดสำหรับชื่อคนไทย
+    pattern: new RegExp(`(?:\u0E19\u0E32\u0E22|\u0E19\u0E32\u0E07\u0E2A\u0E32\u0E27|\u0E19\u0E32\u0E07|\u0E19\\.\u0E2A\\.|\u0E14\\.\u0E0A\\.|\u0E14\\.\u0E0D\\.|\u0E40\u0E14\u0E47\u0E01\u0E0A\u0E32\u0E22|\u0E40\u0E14\u0E47\u0E01\u0E2B\u0E0D\u0E34\u0E07)\\s?[\\u0E01-\\u0E4E]+(?:\\s+[\\u0E01-\\u0E4E]+)?`, "g"),
+    baseConfidence: 0.85
+  },
+  {
+    type: "thai_address",
+    category: "contact",
+    /**
+     * ตั้งใจไม่ใส่ `ม.` เดี่ยว ๆ ไว้ในรายการ
+     * มันย่อได้ทั้ง "หมู่" และ "มาตรา" — เอกสารกฎหมายเขียน `ม.39` กันทั้งนั้น
+     * ซึ่งเจอตอน Arak สแกนซอร์สของตัวเองแล้วรายงานว่าคอมเมนต์อ้างมาตรา 39 คือที่อยู่
+     */
+    pattern: new RegExp(`(?:\u0E15\u0E33\u0E1A\u0E25|\u0E41\u0E02\u0E27\u0E07|\u0E2D\u0E33\u0E40\u0E20\u0E2D|\u0E40\u0E02\u0E15|\u0E08\u0E31\u0E07\u0E2B\u0E27\u0E31\u0E14|\u0E15\\.|\u0E2D\\.|\u0E08\\.|\u0E0B\u0E2D\u0E22|\u0E0B\\.|\u0E16\u0E19\u0E19|\u0E16\\.|\u0E2B\u0E21\u0E39\u0E48\u0E17\u0E35\u0E48|\u0E2B\u0E21\u0E39\u0E48)\\s?[\\u0E01-\\u0E4E0-9]+`, "g"),
+    baseConfidence: 0.6,
+    context: /ที่อยู่|address|จัดส่ง|ผู้รับ|บ้านเลขที่/i,
+    contextConfidence: 0.8,
+    mergeGap: 4
+  },
+  {
+    type: "bank_account",
+    category: "financial",
+    pattern: /(?<!\d)\d{3}[- ]?\d[- ]?\d{5}[- ]?\d(?!\d)/g,
+    baseConfidence: 0.5,
+    requiresContext: true,
+    context: /บัญชี|เลขที่บัญชี|ธนาคาร|account\s*(no|number)|bank/i,
+    contextConfidence: 0.85
+  },
+  {
+    /**
+     * สิบสี่ถึงสิบเก้าหลัก
+     *
+     * เดิมเริ่มที่สิบสามหลักตามสเปกบัตร แต่พอรันกับข้อมูลจริงพบว่า
+     * เลขประจำตัวผู้เสียภาษีไทยซึ่งยาวสิบสามหลักผ่าน Luhn ได้ราวหนึ่งในสิบ
+     * และถูกจับเป็นบัตรเครดิตแทน — บัตรสิบสามหลักเลิกออกไปนานแล้ว
+     * จึงย้ายไปเป็นกฎแยกที่ต้องมีคำบริบทกำกับ
+     */
+    type: "credit_card",
+    category: "financial",
+    pattern: /(?<!\d)(?:\d[- ]?){13,18}\d(?!\d)/g,
+    baseConfidence: 0.9,
+    validate: passesLuhn,
+    context: /บัตรเครดิต|บัตรเดบิต|credit\s*card|card\s*(no|number)/i,
+    contextConfidence: 0.97
+  },
+  {
+    type: "credit_card",
+    category: "financial",
+    pattern: /(?<!\d)(?:\d[- ]?){12}\d(?!\d)/g,
+    baseConfidence: 0.9,
+    validate: passesLuhn,
+    requiresContext: true,
+    context: /บัตรเครดิต|บัตรเดบิต|credit\s*card|card\s*(no|number)/i,
+    contextConfidence: 0.95
+  },
+  {
+    type: "ip_address",
+    category: "device",
+    pattern: /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])/g,
+    baseConfidence: 0.8
+  }
+];
 
-// src/lib.mjs
-import { existsSync as existsSync2, readdirSync as readdirSync2, statSync as statSync2 } from "node:fs";
-import { dirname, join as join3, relative as relative2, resolve, sep as sep2 } from "node:path";
-async function readInput() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  return raw.length === 0 ? {} : JSON.parse(raw);
-}
-function emit(payload) {
-  process.stdout.write(JSON.stringify(payload));
-}
-function quiet() {
-  process.exit(0);
-}
-function warn(message) {
-  emit({ systemMessage: `Arak: ${message}` });
-  process.exit(0);
-}
-var CONFIG_NAME = "arak.config.yaml";
-function discoverProjectRoots(cwd, maxDepth = 3) {
+// ../detect-th/dist/detect.js
+function detect(text, options = {}) {
+  const minConfidence = options.minConfidence ?? 0.5;
+  const window = options.contextWindow ?? 64;
+  const pool = options.detectors ?? DETECTORS;
+  const active = pool.filter((d) => {
+    if (options.only !== void 0 && !options.only.includes(d.type))
+      return false;
+    if (options.exclude !== void 0 && options.exclude.includes(d.type))
+      return false;
+    return true;
+  });
   const found = [];
-  const skip = /* @__PURE__ */ new Set(["node_modules", "dist", "build", ".git", ".scratch", "coverage"]);
+  for (const detector of active) {
+    const pattern = new RegExp(detector.pattern.source, detector.pattern.flags);
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const value = match[0];
+      if (value.length === 0) {
+        pattern.lastIndex += 1;
+        continue;
+      }
+      if (detector.validate !== void 0 && !detector.validate(value))
+        continue;
+      const start = match.index;
+      const end = start + value.length;
+      const hasContext = detector.context !== void 0 && detector.context.test(text.slice(Math.max(0, start - window), Math.min(text.length, end + window)));
+      if (detector.requiresContext === true && !hasContext)
+        continue;
+      const confidence = hasContext ? detector.contextConfidence ?? detector.baseConfidence : detector.baseConfidence;
+      if (confidence < minConfidence)
+        continue;
+      found.push({
+        type: detector.type,
+        category: detector.category,
+        start,
+        end,
+        value,
+        confidence,
+        hasContext
+      });
+    }
+  }
+  const gaps = /* @__PURE__ */ new Map();
+  for (const d of active) {
+    if (d.mergeGap !== void 0)
+      gaps.set(d.type, d.mergeGap);
+  }
+  return mergeAdjacent(resolveOverlaps(found), text, gaps);
+}
+function mergeAdjacent(matches, text, gaps) {
+  if (gaps.size === 0)
+    return matches;
+  const out = [];
+  for (const match of matches) {
+    const previous = out[out.length - 1];
+    const gap = gaps.get(match.type);
+    if (previous !== void 0 && gap !== void 0 && previous.type === match.type && match.start - previous.end <= gap) {
+      out[out.length - 1] = {
+        ...previous,
+        end: match.end,
+        value: text.slice(previous.start, match.end),
+        confidence: Math.max(previous.confidence, match.confidence),
+        hasContext: previous.hasContext || match.hasContext
+      };
+      continue;
+    }
+    out.push(match);
+  }
+  return out;
+}
+function resolveOverlaps(matches) {
+  const sorted = [...matches].sort((a, b) => b.confidence - a.confidence || b.end - b.start - (a.end - a.start) || a.start - b.start);
+  const kept = [];
+  for (const candidate of sorted) {
+    const clashes = kept.some((k) => candidate.start < k.end && k.start < candidate.end);
+    if (!clashes)
+      kept.push(candidate);
+  }
+  return kept.sort((a, b) => a.start - b.start);
+}
+
+// ../cli/src/scan.ts
+var SCANNABLE = /* @__PURE__ */ new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".json",
+  ".sql",
+  ".csv",
+  ".tsv",
+  ".yaml",
+  ".yml",
+  ".md",
+  ".txt",
+  ".log",
+  ".env",
+  ".http"
+]);
+var SKIP_DIRS2 = /* @__PURE__ */ new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "out",
+  "coverage",
+  ".next",
+  ".turbo",
+  ".cache",
+  "vendor"
+]);
+var MAX_BYTES = 2e6;
+var MAX_DEPTH2 = 8;
+function maskValue(value) {
+  const visible = value.length <= 6 ? 1 : 2;
+  if (value.length <= visible * 2) return "\u2022".repeat(value.length);
+  return `${value.slice(0, visible)}${"\u2022".repeat(Math.min(8, value.length - visible * 2))}${value.slice(-visible)}`;
+}
+function positionOf(text, offset) {
+  let line = 1;
+  let lastBreak = -1;
+  for (let i = 0; i < offset; i += 1) {
+    if (text[i] === "\n") {
+      line += 1;
+      lastBreak = i;
+    }
+  }
+  return { line, column: offset - lastBreak };
+}
+function scanText(text, file, minConfidence) {
+  return detect(text, { minConfidence }).map((match) => {
+    const { line, column } = positionOf(text, match.start);
+    return { file, line, column, match, preview: maskValue(match.value) };
+  });
+}
+function collectFiles(root, explicit) {
+  if (explicit.length > 0) {
+    return explicit.map((p) => relative2(root, join3(root, p)).split(sep2).join("/"));
+  }
+  const found = [];
   const walk = (dir, depth) => {
-    if (existsSync2(join3(dir, CONFIG_NAME))) found.push(dir);
-    if (depth >= maxDepth) return;
+    if (depth > MAX_DEPTH2) return;
     let entries;
     try {
       entries = readdirSync2(dir);
@@ -8645,42 +8985,459 @@ function discoverProjectRoots(cwd, maxDepth = 3) {
       return;
     }
     for (const entry of entries) {
-      if (entry.startsWith(".") || skip.has(entry)) continue;
+      if (entry.startsWith(".") && entry !== ".env") continue;
       const full = join3(dir, entry);
+      let stat;
       try {
-        if (statSync2(full).isDirectory()) walk(full, depth + 1);
+        stat = statSync2(full);
       } catch {
+        continue;
       }
+      if (stat.isDirectory()) {
+        if (SKIP_DIRS2.has(entry)) continue;
+        walk(full, depth + 1);
+        continue;
+      }
+      if (stat.size > MAX_BYTES) continue;
+      const dot = entry.lastIndexOf(".");
+      const ext = dot === -1 ? "" : entry.slice(dot);
+      if (!SCANNABLE.has(ext)) continue;
+      found.push(relative2(root, full).split(sep2).join("/"));
     }
   };
-  walk(resolve(cwd), 0);
-  return found;
+  walk(root, 0);
+  return found.sort();
 }
-async function loadArak() {
-  return Promise.resolve().then(() => (init_project(), project_exports));
+function scanFiles(root, files, minConfidence) {
+  const findings = [];
+  const skipped = [];
+  let scanned = 0;
+  for (const file of files) {
+    let text;
+    try {
+      text = readFileSync3(join3(root, file), "utf8");
+    } catch {
+      skipped.push(file);
+      continue;
+    }
+    scanned += 1;
+    findings.push(...scanText(text, file, minConfidence));
+  }
+  return { findings, scanned, skipped };
 }
 
-// src/on-stop.mjs
-async function main() {
-  const input = await readInput();
-  const cwd = input.cwd;
-  if (typeof cwd !== "string") quiet();
-  const roots = discoverProjectRoots(cwd);
-  if (roots.length === 0) quiet();
-  const { loadProject: loadProject2, today: today2 } = await loadArak();
-  const notes = [];
-  for (const root of roots) {
-    const run = loadProject2(root, { today: today2() });
-    if (run.nextText === run.previousText) continue;
-    writeFileSync(run.catalogPath, run.nextText, "utf8");
-    const marked = run.changes.filter((c) => c.kind === "marked").length;
-    const added = run.changes.filter((c) => c.kind === "added").length;
-    const parts = [];
-    if (marked > 0) parts.push(`\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E40\u0E1E\u0E34\u0E48\u0E21 ${marked}`);
-    if (added > 0) parts.push(`\u0E1E\u0E1A\u0E43\u0E2B\u0E21\u0E48 ${added}`);
-    notes.push(parts.length > 0 ? `${run.config.catalog} \u2014 ${parts.join(" \xB7 ")}` : run.config.catalog);
-  }
-  if (notes.length === 0) quiet();
-  emit({ systemMessage: `Arak: \u0E2D\u0E31\u0E1B\u0E40\u0E14\u0E15 ${notes.join(" | ")}` });
+// ../cli/src/ui.ts
+var useColor = process.env["NO_COLOR"] === void 0 && process.env["TERM"] !== "dumb" && process.stdout.isTTY === true;
+var ESC = "\x1B";
+var wrap = (code) => (text) => useColor ? `${ESC}[${code}m${text}${ESC}[0m` : text;
+var bold = wrap("1");
+var dim = wrap("2");
+var red = wrap("31");
+var green = wrap("32");
+var yellow = wrap("33");
+var blue = wrap("36");
+function heading(text) {
+  return `
+${bold(text)}`;
 }
-main().catch((error) => warn(`\u0E2E\u0E38\u0E01\u0E15\u0E2D\u0E19\u0E08\u0E1A\u0E40\u0E17\u0E34\u0E23\u0E4C\u0E19\u0E17\u0E33\u0E07\u0E32\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u2014 ${error.message}`));
+function capped(items, limit, render) {
+  const shown = items.slice(0, limit).map(render);
+  if (items.length > limit) {
+    shown.push(dim(`  \u2026 \u0E41\u0E25\u0E30\u0E2D\u0E35\u0E01 ${items.length - limit} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23`));
+  }
+  return shown;
+}
+function pad(text, width) {
+  return text.length >= width ? text : text + " ".repeat(width - text.length);
+}
+
+// ../cli/src/index.ts
+var VERSION = "0.1.0";
+function parseFlags(argv) {
+  const flags = {
+    root: process.cwd(),
+    check: false,
+    force: false,
+    json: false,
+    heuristic: true,
+    minConfidence: 0.7,
+    paths: [],
+    ignore: [],
+    strict: false
+  };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    switch (arg) {
+      case "--root": {
+        const value = argv[i + 1];
+        if (value === void 0) fail("--root \u0E15\u0E49\u0E2D\u0E07\u0E15\u0E32\u0E21\u0E14\u0E49\u0E27\u0E22\u0E1E\u0E32\u0E18");
+        flags.root = isAbsolute(value) ? value : resolve(process.cwd(), value);
+        i += 1;
+        break;
+      }
+      case "--check":
+        flags.check = true;
+        break;
+      case "--force":
+        flags.force = true;
+        break;
+      case "--json":
+        flags.json = true;
+        break;
+      case "--no-heuristic":
+        flags.heuristic = false;
+        break;
+      case "--strict":
+        flags.strict = true;
+        break;
+      case "--ignore": {
+        const value = argv[i + 1];
+        if (value === void 0) fail("--ignore \u0E15\u0E49\u0E2D\u0E07\u0E15\u0E32\u0E21\u0E14\u0E49\u0E27\u0E22\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E1E\u0E32\u0E18");
+        flags.ignore.push(value);
+        i += 1;
+        break;
+      }
+      case "--min-confidence": {
+        const value = Number(argv[i + 1]);
+        if (!Number.isFinite(value) || value < 0 || value > 1) {
+          fail("--min-confidence \u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E15\u0E31\u0E27\u0E40\u0E25\u0E02\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07 0 \u0E16\u0E36\u0E07 1");
+        }
+        flags.minConfidence = value;
+        i += 1;
+        break;
+      }
+      default:
+        if (arg === void 0) break;
+        if (arg.startsWith("-")) fail(`\u0E44\u0E21\u0E48\u0E23\u0E39\u0E49\u0E08\u0E31\u0E01\u0E15\u0E31\u0E27\u0E40\u0E25\u0E37\u0E2D\u0E01 ${arg}`);
+        flags.paths.push(arg);
+    }
+  }
+  return flags;
+}
+function fail(message) {
+  process.stderr.write(`${red("arak:")} ${message}
+`);
+  process.exit(2);
+}
+var HELP = `${bold("arak")} \u2014 \u0E21\u0E32\u0E23\u0E4C\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E15\u0E31\u0E49\u0E07\u0E41\u0E15\u0E48\u0E15\u0E2D\u0E19\u0E40\u0E02\u0E35\u0E22\u0E19\u0E42\u0E04\u0E49\u0E14
+
+\u0E01\u0E32\u0E23\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19
+  arak init            \u0E2A\u0E23\u0E49\u0E32\u0E07 ${CONFIG_FILE} \u0E41\u0E25\u0E30\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E15\u0E31\u0E49\u0E07\u0E15\u0E49\u0E19
+  arak sync            \u0E2D\u0E48\u0E32\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A \u0E41\u0E25\u0E49\u0E27\u0E1B\u0E23\u0E31\u0E1A\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E43\u0E2B\u0E49\u0E15\u0E23\u0E07
+  arak status          \u0E23\u0E32\u0E22\u0E07\u0E32\u0E19\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E42\u0E14\u0E22\u0E44\u0E21\u0E48\u0E41\u0E01\u0E49\u0E44\u0E1F\u0E25\u0E4C (\u0E43\u0E0A\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E14\u0E48\u0E32\u0E19\u0E43\u0E19 CI)
+  arak baseline        \u0E22\u0E01\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E44\u0E1B\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E23\u0E34\u0E48\u0E21\u0E19\u0E31\u0E1A\u0E08\u0E32\u0E01\u0E28\u0E39\u0E19\u0E22\u0E4C
+  arak scan [paths]    \u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07\u0E17\u0E35\u0E48\u0E1B\u0E19\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C \u0E40\u0E0A\u0E48\u0E19 seed \u0E2B\u0E23\u0E37\u0E2D fixture
+
+\u0E15\u0E31\u0E27\u0E40\u0E25\u0E37\u0E2D\u0E01
+  --root <path>        \u0E23\u0E32\u0E01\u0E42\u0E1B\u0E23\u0E40\u0E08\u0E01\u0E15\u0E4C (\u0E04\u0E48\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19\u0E04\u0E37\u0E2D\u0E42\u0E1F\u0E25\u0E40\u0E14\u0E2D\u0E23\u0E4C\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19)
+  --check              \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A sync \u2014 \u0E44\u0E21\u0E48\u0E40\u0E02\u0E35\u0E22\u0E19\u0E44\u0E1F\u0E25\u0E4C \u0E16\u0E49\u0E32\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E08\u0E30\u0E04\u0E37\u0E19\u0E04\u0E48\u0E32 1
+  --no-heuristic       \u0E43\u0E2B\u0E49\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E21\u0E35\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E2A\u0E34\u0E48\u0E07\u0E17\u0E35\u0E48\u0E04\u0E19\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E40\u0E2D\u0E07 \u0E44\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E14\u0E32
+  --strict             \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A status \u2014 \u0E43\u0E2B\u0E49\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E17\u0E33\u0E43\u0E2B\u0E49\u0E15\u0E01\u0E14\u0E49\u0E27\u0E22
+  --min-confidence <n> \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A scan \u2014 \u0E40\u0E01\u0E13\u0E11\u0E4C\u0E04\u0E27\u0E32\u0E21\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E31\u0E48\u0E19 0 \u0E16\u0E36\u0E07 1 (\u0E04\u0E48\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19 0.7)
+  --ignore <glob>      \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A scan \u2014 \u0E02\u0E49\u0E32\u0E21\u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E23\u0E07\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A \u0E43\u0E2A\u0E48\u0E0B\u0E49\u0E33\u0E44\u0E14\u0E49
+  --json               \u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E1C\u0E25\u0E40\u0E1B\u0E47\u0E19 JSON
+  --force              \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A init \u2014 \u0E40\u0E02\u0E35\u0E22\u0E19\u0E17\u0E31\u0E1A\u0E44\u0E1F\u0E25\u0E4C\u0E40\u0E14\u0E34\u0E21
+
+\u0E23\u0E2B\u0E31\u0E2A\u0E08\u0E1A\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19
+  0  \u0E1C\u0E48\u0E32\u0E19
+  1  \u0E21\u0E35\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19 \u0E21\u0E35\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01 \u0E2B\u0E23\u0E37\u0E2D scan \u0E40\u0E08\u0E2D\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E08\u0E23\u0E34\u0E07
+  2  \u0E40\u0E23\u0E35\u0E22\u0E01\u0E43\u0E0A\u0E49\u0E1C\u0E34\u0E14 \u0E2B\u0E23\u0E37\u0E2D\u0E2D\u0E48\u0E32\u0E19\u0E44\u0E1F\u0E25\u0E4C\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49
+
+\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38  scan \u0E08\u0E30\u0E44\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E04\u0E48\u0E32\u0E08\u0E23\u0E34\u0E07\u0E2D\u0E2D\u0E01\u0E21\u0E32\u0E40\u0E14\u0E47\u0E14\u0E02\u0E32\u0E14 \u0E41\u0E2A\u0E14\u0E07\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E04\u0E48\u0E32\u0E17\u0E35\u0E48\u0E1B\u0E34\u0E14\u0E1A\u0E31\u0E07\u0E41\u0E25\u0E49\u0E27
+          \u0E40\u0E1E\u0E23\u0E32\u0E30 log \u0E02\u0E2D\u0E07 CI \u0E2D\u0E22\u0E39\u0E48\u0E19\u0E32\u0E19\u0E01\u0E27\u0E48\u0E32\u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E2A\u0E41\u0E01\u0E19\u0E40\u0E2A\u0E35\u0E22\u0E2D\u0E35\u0E01
+`;
+function main() {
+  const argv = process.argv.slice(2);
+  const command = argv[0] ?? "help";
+  const flags = parseFlags(argv.slice(1));
+  switch (command) {
+    case "init":
+      return commandInit(flags);
+    case "sync":
+      return commandSync(flags, false);
+    case "status":
+      return commandSync(flags, true);
+    case "scan":
+      return commandScan(flags);
+    case "baseline":
+      return commandBaseline(flags);
+    case "help":
+    case "--help":
+    case "-h":
+      process.stdout.write(HELP);
+      return;
+    case "--version":
+    case "-v":
+      process.stdout.write(`${VERSION}
+`);
+      return;
+    default:
+      fail(`\u0E44\u0E21\u0E48\u0E23\u0E39\u0E49\u0E08\u0E31\u0E01\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 "${command}" \u2014 \u0E25\u0E2D\u0E07 arak help`);
+  }
+}
+function commandInit(flags) {
+  const configPath = join4(flags.root, CONFIG_FILE);
+  const discovered = discoverPrismaSchemas(flags.root);
+  const config = defaultConfig(discovered);
+  const catalogPath = join4(flags.root, config.catalog);
+  if (existsSync2(configPath) && !flags.force) {
+    fail(`${CONFIG_FILE} \u0E21\u0E35\u0E2D\u0E22\u0E39\u0E48\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E43\u0E0A\u0E49 --force \u0E16\u0E49\u0E32\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E40\u0E02\u0E35\u0E22\u0E19\u0E17\u0E31\u0E1A`);
+  }
+  if (existsSync2(catalogPath) && !flags.force) {
+    fail(`${config.catalog} \u0E21\u0E35\u0E2D\u0E22\u0E39\u0E48\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E43\u0E0A\u0E49 --force \u0E16\u0E49\u0E32\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E40\u0E02\u0E35\u0E22\u0E19\u0E17\u0E31\u0E1A`);
+  }
+  writeFileSync(configPath, serializeConfig(config), "utf8");
+  writeFileSync(
+    catalogPath,
+    serializeCatalog(starterCatalog(basename(flags.root))),
+    "utf8"
+  );
+  process.stdout.write(`${green("\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E41\u0E25\u0E49\u0E27")} ${CONFIG_FILE}
+`);
+  process.stdout.write(`${green("\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E41\u0E25\u0E49\u0E27")} ${config.catalog}
+`);
+  if (discovered.length === 0) {
+    process.stdout.write(
+      `${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E44\u0E1F\u0E25\u0E4C .prisma")} \u2014 \u0E40\u0E15\u0E34\u0E21\u0E1E\u0E32\u0E18\u0E40\u0E2D\u0E07\u0E43\u0E19 ${CONFIG_FILE} \u0E41\u0E25\u0E49\u0E27\u0E23\u0E31\u0E19 arak sync
+`
+    );
+  } else {
+    process.stdout.write(`${dim("\u0E1E\u0E1A\u0E2A\u0E04\u0E35\u0E21\u0E32")} ${discovered.length} \u0E44\u0E1F\u0E25\u0E4C
+`);
+    process.stdout.write(`
+\u0E23\u0E31\u0E19\u0E15\u0E48\u0E2D: ${bold("arak sync")}
+`);
+  }
+}
+function run(flags) {
+  try {
+    return loadProject(flags.root, { today: today(), useHeuristic: flags.heuristic });
+  } catch (error) {
+    if (error instanceof ProjectError) {
+      fail(`${error.message} \u2014 \u0E23\u0E30\u0E1A\u0E38\u0E1E\u0E32\u0E18\u0E43\u0E19 ${CONFIG_FILE} \u0E2B\u0E23\u0E37\u0E2D\u0E23\u0E31\u0E19 arak init \u0E01\u0E48\u0E2D\u0E19`);
+    }
+    throw error;
+  }
+}
+function commandBaseline(flags) {
+  const result = run(flags);
+  const { catalog, moved } = applyBaseline(result.catalog, (/* @__PURE__ */ new Date()).toISOString().slice(0, 10));
+  const text = serializeCatalog(catalog, result.previousText);
+  writeFileSync(result.catalogPath, text, "utf8");
+  const out = process.stdout;
+  if (moved.length === 0) {
+    out.write(`${dim("\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E22\u0E01\u0E44\u0E1B\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32")}
+`);
+    process.exit(0);
+  }
+  out.write(`${green("\u0E22\u0E01\u0E44\u0E1B\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E41\u0E25\u0E49\u0E27")} ${moved.length} \u0E1F\u0E34\u0E25\u0E14\u0E4C
+`);
+  for (const line of capped(moved, 10, (id) => `  ${dim(id)}`)) out.write(`${line}
+`);
+  out.write(
+    `
+\u0E15\u0E31\u0E49\u0E07\u0E41\u0E15\u0E48\u0E19\u0E35\u0E49\u0E44\u0E1B \u0E2E\u0E38\u0E01\u0E08\u0E30\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E40\u0E02\u0E35\u0E22\u0E19\u0E43\u0E2B\u0E21\u0E48
+${dim("\u0E02\u0E2D\u0E07\u0E40\u0E01\u0E48\u0E32\u0E22\u0E31\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E41\u0E25\u0E30\u0E22\u0E31\u0E07\u0E19\u0E31\u0E1A\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E35\u0E49 \u2014 \u0E14\u0E39\u0E14\u0E49\u0E27\u0E22 arak status")}
+`
+  );
+  process.exit(0);
+}
+function commandSync(flags, readOnly) {
+  const result = run(flags);
+  const summary = summarize(result.catalog);
+  const errors = result.problems.filter((p) => p.level === "error");
+  const warnings = result.problems.filter((p) => p.level === "warning");
+  const changed = result.nextText !== result.previousText;
+  if (flags.json) {
+    process.stdout.write(
+      `${JSON.stringify(
+        { summary, changes: result.changes, problems: result.problems, changed },
+        null,
+        2
+      )}
+`
+    );
+  }
+  if (!readOnly && !flags.check && changed) {
+    writeFileSync(result.catalogPath, result.nextText, "utf8");
+  }
+  if (!flags.json) {
+    report(result, summary, errors, warnings, changed, readOnly, flags);
+  }
+  if (errors.length > 0) process.exit(1);
+  if (readOnly && summary.unmarked > 0) process.exit(1);
+  if (readOnly && flags.strict && summary.deferred > 0) process.exit(1);
+  if (flags.check && changed) process.exit(1);
+  process.exit(0);
+}
+function report(result, summary, errors, warnings, changed, readOnly, flags) {
+  const out = process.stdout;
+  out.write(
+    `${dim("\u0E2A\u0E04\u0E35\u0E21\u0E32")} ${result.config.sources.prisma.length} \u0E44\u0E1F\u0E25\u0E4C  ${dim("\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01")} ${result.config.catalog}
+`
+  );
+  if (result.changes.length > 0) {
+    out.write(heading("\u0E2A\u0E34\u0E48\u0E07\u0E17\u0E35\u0E48\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19"));
+    out.write("\n");
+    for (const line of capped(result.changes, 15, (c) => {
+      const label = c.kind === "added" ? green("\u0E40\u0E1E\u0E34\u0E48\u0E21  ") : c.kind === "orphaned" ? yellow("\u0E2B\u0E32\u0E22\u0E44\u0E1B ") : c.kind === "marked" ? green("\u0E21\u0E32\u0E23\u0E4C\u0E01 ") : blue(pad(c.kind, 6));
+      return `  ${label} ${c.id}${c.detail ? dim(`  ${c.detail}`) : ""}`;
+    })) {
+      out.write(`${line}
+`);
+    }
+  }
+  const unmarked = result.catalog.fields.filter((f) => f.status === "unmarked" && !f.orphaned);
+  if (unmarked.length > 0) {
+    out.write(heading("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19"));
+    out.write(dim("  \u0E40\u0E15\u0E34\u0E21 /// @pii(...) \u0E2B\u0E23\u0E37\u0E2D /// @not-pii(reason=...) \u0E44\u0E27\u0E49\u0E40\u0E2B\u0E19\u0E37\u0E2D\u0E1F\u0E34\u0E25\u0E14\u0E4C\n"));
+    for (const line of capped(unmarked, 15, (f) => {
+      const where = `${f.source.file}:${f.source.line}`;
+      const guess = f.category ? dim(` \u0E19\u0E48\u0E32\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19 ${f.category}`) : "";
+      return `  ${yellow("?")} ${pad(f.id, 44)} ${dim(where)}${guess}`;
+    })) {
+      out.write(`${line}
+`);
+    }
+  }
+  if (errors.length > 0) {
+    out.write(heading("\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14"));
+    out.write("\n");
+    for (const line of capped(errors, 15, (p) => formatProblem(p, red))) out.write(`${line}
+`);
+  }
+  if (warnings.length > 0) {
+    out.write(heading("\u0E04\u0E33\u0E40\u0E15\u0E37\u0E2D\u0E19"));
+    out.write("\n");
+    for (const line of capped(warnings, 10, (p) => formatProblem(p, yellow))) {
+      out.write(`${line}
+`);
+    }
+  }
+  const sensitive = result.catalog.fields.filter(
+    (f) => f.status !== "not-pii" && isSensitiveCategory(f.category)
+  );
+  out.write(heading("\u0E2A\u0E23\u0E38\u0E1B"));
+  out.write("\n");
+  out.write(`  ${pad("\u0E21\u0E32\u0E23\u0E4C\u0E01\u0E41\u0E25\u0E49\u0E27", 22)} ${green(String(summary.marked))}
+`);
+  out.write(
+    `  ${pad("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19", 20)} ${summary.unmarked > 0 ? yellow(String(summary.unmarked)) : String(summary.unmarked)}
+`
+  );
+  if (summary.deferred > 0) {
+    out.write(`  ${pad("\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E17\u0E35\u0E48\u0E1E\u0E31\u0E01\u0E44\u0E27\u0E49", 19)} ${blue(String(summary.deferred))}
+`);
+  }
+  out.write(`  ${pad("\u0E23\u0E30\u0E1A\u0E38\u0E27\u0E48\u0E32\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48", 21)} ${String(summary.notPii)}
+`);
+  if (sensitive.length > 0) {
+    out.write(`  ${pad("\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26", 18)} ${red(String(sensitive.length))}
+`);
+  }
+  if (summary.orphaned > 0) {
+    out.write(`  ${pad("\u0E2B\u0E32\u0E22\u0E44\u0E1B\u0E08\u0E32\u0E01\u0E0B\u0E2D\u0E23\u0E4C\u0E2A", 21)} ${yellow(String(summary.orphaned))}
+`);
+  }
+  out.write("\n");
+  if (readOnly) {
+    if (summary.unmarked > 0) {
+      out.write(`${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1C\u0E48\u0E32\u0E19")} \u2014 \u0E40\u0E2B\u0E25\u0E37\u0E2D ${summary.unmarked} \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E43\u0E2B\u0E21\u0E48\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19
+`);
+    } else if (flags.strict && summary.deferred > 0) {
+      out.write(`${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1C\u0E48\u0E32\u0E19")} \u2014 \u0E42\u0E2B\u0E21\u0E14\u0E40\u0E02\u0E49\u0E21 \u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32 ${summary.deferred} \u0E1F\u0E34\u0E25\u0E14\u0E4C
+`);
+    } else if (summary.deferred > 0) {
+      out.write(
+        `${green("\u0E1C\u0E48\u0E32\u0E19")} \u2014 \u0E02\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E04\u0E23\u0E1A ${dim(`(\u0E22\u0E31\u0E07\u0E21\u0E35\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E04\u0E49\u0E32\u0E07\u0E2D\u0E22\u0E39\u0E48 ${summary.deferred} \u0E1F\u0E34\u0E25\u0E14\u0E4C \u2014 \u0E14\u0E39\u0E14\u0E49\u0E27\u0E22 arak status --strict)`)}
+`
+      );
+    } else {
+      out.write(`${green("\u0E1C\u0E48\u0E32\u0E19")} \u2014 \u0E17\u0E38\u0E01\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27
+`);
+    }
+  } else if (flags.check) {
+    out.write(
+      changed ? `${yellow("\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E0B\u0E2D\u0E23\u0E4C\u0E2A")} \u2014 \u0E23\u0E31\u0E19 arak sync \u0E41\u0E25\u0E49\u0E27 commit \u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C
+` : `${green("\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E41\u0E25\u0E49\u0E27")}
+`
+    );
+  } else if (changed) {
+    out.write(`${green("\u0E40\u0E02\u0E35\u0E22\u0E19\u0E41\u0E25\u0E49\u0E27")} ${result.config.catalog}
+`);
+  } else {
+    out.write(`${dim("\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19")}
+`);
+  }
+}
+function commandScan(flags) {
+  const ignore = [...loadConfig(flags.root).scan.ignore, ...flags.ignore];
+  const all = collectFiles(flags.root, flags.paths);
+  const files = all.filter((file) => !matchesAny(file, ignore));
+  const ignored = all.length - files.length;
+  const { findings, scanned, skipped } = scanFiles(flags.root, files, flags.minConfidence);
+  if (flags.json) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          scanned,
+          ignored,
+          skipped,
+          findings: findings.map((f) => ({
+            file: f.file,
+            line: f.line,
+            column: f.column,
+            type: f.match.type,
+            category: f.match.category,
+            confidence: f.match.confidence,
+            preview: f.preview
+          }))
+        },
+        null,
+        2
+      )}
+`
+    );
+    process.exit(findings.length > 0 ? 1 : 0);
+  }
+  const out = process.stdout;
+  out.write(`${dim("\u0E2A\u0E41\u0E01\u0E19")} ${scanned} \u0E44\u0E1F\u0E25\u0E4C  ${dim("\u0E40\u0E01\u0E13\u0E11\u0E4C\u0E04\u0E27\u0E32\u0E21\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E31\u0E48\u0E19")} ${flags.minConfidence}
+`);
+  for (const file of skipped) {
+    out.write(`${yellow("\u0E2D\u0E48\u0E32\u0E19\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49")} ${file}
+`);
+  }
+  if (findings.length === 0) {
+    out.write(`
+${green("\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48\u0E2A\u0E41\u0E01\u0E19")}
+`);
+    process.exit(0);
+  }
+  const byType = /* @__PURE__ */ new Map();
+  for (const f of findings) byType.set(f.match.type, (byType.get(f.match.type) ?? 0) + 1);
+  out.write(heading("\u0E17\u0E35\u0E48\u0E1E\u0E1A"));
+  out.write("\n");
+  for (const line of capped(findings, 30, (f) => {
+    const where = `${f.file}:${f.line}:${f.column}`;
+    return `  ${red(pad(f.match.type, 20))} ${pad(f.preview, 16)} ${dim(where)}`;
+  })) {
+    out.write(`${line}
+`);
+  }
+  out.write(heading("\u0E2A\u0E23\u0E38\u0E1B"));
+  out.write("\n");
+  for (const [type, count] of [...byType].sort((a, b) => b[1] - a[1])) {
+    out.write(`  ${pad(type, 22)} ${String(count)}
+`);
+  }
+  out.write(`
+${red("\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E08\u0E23\u0E34\u0E07\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C")} ${findings.length} \u0E08\u0E38\u0E14 \u2014 \u0E22\u0E49\u0E32\u0E22\u0E2D\u0E2D\u0E01\u0E2B\u0E23\u0E37\u0E2D\u0E41\u0E17\u0E19\u0E14\u0E49\u0E27\u0E22\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E21\u0E21\u0E15\u0E34
+`);
+  process.exit(1);
+}
+function formatProblem(problem, color) {
+  const where = problem.file !== void 0 ? dim(` ${problem.file}:${problem.line ?? 0}`) : "";
+  return `  ${color("\xD7")} ${problem.id}${where}
+    ${problem.message}`;
+}
+main();

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // @ts-expect-error — ฮุกเขียนเป็น .mjs ล้วนเพื่อให้รันได้โดยไม่ต้อง build
-import { discoverProjectRoots, findProjectRoot, toRepoPath } from "../hooks/lib.mjs";
+import { discoverProjectRoots, findProjectRoot, toRepoPath } from "../src/lib.mjs";
 
 let root: string;
 

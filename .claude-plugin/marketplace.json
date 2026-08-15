@@ -1,0 +1,13 @@
+{
+  "name": "arak",
+  "owner": {
+    "name": "Toptier Innovation"
+  },
+  "plugins": [
+    {
+      "name": "arak",
+      "source": "./packages/plugin",
+      "description": "ถามให้มาร์กข้อมูลส่วนบุคคลทันทีที่ฟิลด์ถูกเขียน แล้วเก็บเป็นแคตตาล็อกสำหรับออก RoPA ตาม PDPA"
+    }
+  ]
+}

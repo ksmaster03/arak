@@ -45,7 +45,8 @@ const PERSON_TAIL =
  * แต่เจ้าของกิจการรายเดียวใช้เลขประจำตัวเดียวกับบัตรประชาชน จึงยังเสนอไว้
  * เพียงแต่ลดความเชื่อมั่นลงให้ไปอยู่ท้ายรายการ
  */
-const JURISTIC_CONTAINER = /^(company|organi[sz]ation|corporate|firm|branch|tenant|site|carrier|vendor|supplier)$/i;
+const JURISTIC_CONTAINER =
+  /^(company|organi[sz]ation|corporate|firm|branch|tenant|site|carrier|vendor|supplier|clinic|hospital|store|shop|merchant)$/i;
 const JURISTIC_PENALTY = 0.4;
 
 /**
@@ -96,6 +97,16 @@ const RULES: Rule[] = [
     confidence: 0.85,
   },
   {
+    /**
+     * ชื่อของคนที่สาม เช่นผู้ติดต่อฉุกเฉินหรือผู้ปกครอง
+     * เป็นข้อมูลส่วนบุคคลของ "อีกคนหนึ่ง" ที่อยู่ในตารางของเจ้าของข้อมูล
+     */
+    id: "related-person-name",
+    test: /(emergency|guardian|parent|spouse|relative|referrer|contact)_?(person_?)?name/,
+    category: "identity",
+    confidence: 0.8,
+  },
+  {
     id: "person-name-bare",
     test: /^name(_th|_en)?$/,
     category: "identity",
@@ -144,6 +155,20 @@ const RULES: Rule[] = [
   },
 
   // การจ้างงานและการศึกษา
+  {
+    /** HN ของโรงพยาบาลคือตัวระบุผู้ป่วยโดยตรง ไม่ใช่รหัสระบบทั่วไป */
+    id: "patient-number",
+    test: /^hn$|^mrn$|hospital_?(no|number)|patient_?(no|id|code|number)/,
+    category: "identity",
+    confidence: 0.85,
+  },
+  {
+    /** เลขใบอนุญาตประกอบวิชาชีพผูกกับตัวบุคคลและค้นย้อนกลับได้ */
+    id: "professional-licence",
+    test: /licen[cs]e_?(no|number|id)$|licen[cs]e_?number|practitioner_?(no|id)/,
+    category: "government_id",
+    confidence: 0.8,
+  },
   {
     id: "employee-code",
     test: /^emp(loyee)?_?(id|no|code)$|staff_?(id|no|code)|badge_?(id|no)/,
@@ -217,7 +242,7 @@ const RULES: Rule[] = [
   // ข้อมูลอ่อนไหวตามมาตรา 26
   {
     id: "health",
-    test: /health|medical|diagnos|allerg|blood_?(type|group)|prescription|treatment|illness|สุขภาพ/,
+    test: /health|medical|diagnos|allerg|blood_?(type|group)|prescription|treatment|illness|chronic|comorbid|symptom|vaccin|immuni|surgery|therapy|สุขภาพ|โรคประจำตัว/,
     category: "health",
     confidence: 0.9,
   },

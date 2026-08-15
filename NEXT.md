@@ -1,6 +1,6 @@
 # 📍 จุดกลับมาทำต่อ
 
-สถานะ ณ 14 ส.ค. 2569 · **149 เทสต์ผ่าน · typecheck สะอาด · ยังไม่ push ขึ้น remote**
+สถานะ ณ 14 ส.ค. 2569 · **155 เทสต์ผ่าน · typecheck สะอาด · ยังไม่ push ขึ้น remote**
 
 ## ทำอะไรไปแล้ว
 
@@ -10,10 +10,11 @@
 | `packages/prisma` | ตัวอ่าน `.prisma` ที่ให้เลขบรรทัดจริง · แยกกุญแจนอกออกจากตัวข้อมูล · อ่าน `@pii` / `@not-pii` |
 | `packages/detect-th` | ตัวตรวจค่าจริงของไทย 12 ชนิด · `Redactor` ที่ให้ตัวแทนคงที่และแปลงกลับได้ · ไม่มี dependency |
 | `packages/cli` | `arak init` / `sync` / `baseline` / `status` / `scan` |
-| `packages/plugin` | ฮุก Claude Code สามตัว — SessionStart / PostToolUse / Stop |
+| `packages/plugin` | ปลั๊กอิน Claude Code — ฮุกสามตัว + คำสั่ง `/arak:*` + `bin/arak.mjs` ที่ bundle แล้ว |
+| `.claude-plugin/` | แคตตาล็อก marketplace ติดตั้งจากพาธในเครื่องได้เลย |
 | `examples/demo-app` | สคีมาสมมติที่ใช้เป็นสนามทดสอบ · แคตตาล็อกปิดงานครบ 14 มาร์ก |
 
-ทดสอบกับสคีมาจริงสามชุดแล้ว — DockSync 27 ฟิลด์ · FixFlow 27 · SCHEM 43
+ทดสอบกับสคีมาจริงสี่ชุดแล้ว — DockSync 27 ฟิลด์ · FixFlow 27 · SCHEM 43 · คลินิกสมมติ 28
 และสแกน DockSync API เจอข้อมูลใน seed 129 จุด
 
 ## การตัดสินใจเรื่องฮุกที่เคาะไปแล้ว (14 ส.ค.)
@@ -26,11 +27,26 @@
 ทดสอบฮุกด้วยมือแล้วครบห้าเคส — เจอฟิลด์ใหม่ · เขียนแคตตาล็อกตอนจบเทิร์น ·
 เงียบเมื่อไม่ใช่โปรเจกต์ Arak · เงียบเมื่อแก้ไฟล์ที่ไม่ใช่สคีมา · อินพุตพังแล้วไม่ระเบิด
 
+## วิธีติดตั้ง (ทางที่ควรใช้)
+
+```
+/plugin marketplace add D:/Project/arak
+/plugin install arak@arak
+```
+รีสตาร์ต แล้ว `/arak:setup`
+
+ปลั๊กอินถูก bundle ให้ไม่มี dependency เลย (1.3MB 5 ไฟล์) เพราะ Claude Code
+**คัดลอกเฉพาะโฟลเดอร์ปลั๊กอิน** ไปแคช และโหมด link ใช้บนวินโดวส์ไม่ได้
+
+⚠️ **`.claude/settings.json` ของ repo นี้ยังชี้ฮุกชุดเดียวกันอยู่**
+ถ้าติดตั้งผ่าน `/plugin` แล้ว ให้ลบไฟล์นั้นทิ้ง ไม่งั้นฮุกจะยิงซ้ำสองรอบ
+
 ## ทำต่อได้ทันที
 
 1. **ยังไม่เคยเห็นฮุกทำงานในเซสชันจริง** — ที่ทดสอบคือป้อน JSON เข้า stdin เอง
-   ต้องเปิด Claude Code ใหม่ที่รากของ repo นี้แล้วลองแก้ `examples/demo-app/prisma/schema.prisma`
-   (ฮุกโหลดตอนเริ่มเซสชัน เซสชันที่เปิดค้างอยู่จะยังไม่เห็น `.claude/settings.json` ที่เพิ่งเขียน)
+   และยังไม่เคยรัน `/plugin marketplace add` จริง (เป็นคำสั่งโต้ตอบ ทำแทนไม่ได้)
+   ลองที่ **`D:\Projectrak-sandbox`** ซึ่งเป็นโปรเจกต์เปล่าที่ทำไว้ให้ลองโดยเฉพาะ
+   ควรได้ผล `ยังไม่ได้ตัดสิน 28 · ข้อมูลอ่อนไหว ม.26 5`
 
 2. **ตัวสร้าง RoPA** — `arak ropa` ออก .docx/.xlsx ตาม ม.39 ทั้งเจ็ดหัวข้อ
    ใช้แนวทางเดียวกับที่เคยทำ proposal ด้วย python-docx (ดู memory `ref_docx_proposal_build`)
@@ -60,6 +76,12 @@
   ทุกไฟล์ใน `packages/plugin/hooks/` จึงมี `.catch()` ที่แปลงข้อผิดพลาดเป็นข้อความเตือน
 - **`pnpm -r exec` พังกับแพ็กเกจที่ไม่มี tsconfig** ใช้ `pnpm -r run typecheck` แทน
   แล้วให้แต่ละแพ็กเกจประกาศสคริปต์ของตัวเอง
+- **ปลั๊กอินต้อง bundle ให้ไม่มี dependency** ไม่ใช่ทางเลือก — Claude Code คัดลอกเฉพาะ
+  โฟลเดอร์ปลั๊กอิน symlink ของ pnpm ไม่ตามไปด้วย และ link mode ใช้บนวินโดวส์ไม่ได้
+- **`yaml` มีแต่รุ่น CommonJS สำหรับ node** พอ bundle เป็น ESM จะพัง
+  `Dynamic require of "process"` → ต้องเติม `createRequire` **ใต้ shebang**
+  ใส่ผ่าน `banner` ของ esbuild ไม่ได้เพราะมันไปอยู่เหนือ shebang แล้วไฟล์ parse ไม่ผ่าน
+  ตัว `build.mjs` จึง post-process เอง
 
 ## วิธีลองเร็ว ๆ
 

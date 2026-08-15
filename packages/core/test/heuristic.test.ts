@@ -113,6 +113,30 @@ describe("guessCategory", () => {
       expect(guessCategory(field("Dock", "settings", "Json"))).toBeNull();
     });
 
+    it("รหัสประจำตัวผู้ป่วยคือตัวระบุตัวบุคคล ไม่ใช่รหัสระบบ", () => {
+      expect(guessCategory(field("Patient", "hn"))?.category).toBe("identity");
+      expect(guessCategory(field("Visit", "patientNo"))?.category).toBe("identity");
+      // ต้องไม่ไปจับรหัสระบบทั่วไปที่บังเอิญมีตัวอักษรคล้ายกัน
+      expect(guessCategory(field("Order", "channelCode"))).toBeNull();
+    });
+
+    it("เลขใบอนุญาตประกอบวิชาชีพ แต่ไม่ปนกับป้ายทะเบียนรถ", () => {
+      expect(guessCategory(field("Staff", "licenceNo"))?.category).toBe("government_id");
+      expect(guessCategory(field("Staff", "licenseNumber"))?.category).toBe("government_id");
+      expect(guessCategory(field("Vehicle", "licensePlate"))?.category).toBe("vehicle");
+    });
+
+    it("ชื่อผู้ติดต่อฉุกเฉินคือข้อมูลของอีกคนหนึ่งที่อยู่ในตารางเดียวกัน", () => {
+      expect(guessCategory(field("Patient", "emergencyContactName"))?.category).toBe("identity");
+      expect(guessCategory(field("Student", "guardianName"))?.category).toBe("identity");
+    });
+
+    it("โรคประจำตัวและข้อมูลรักษาเป็นข้อมูลอ่อนไหว ม.26", () => {
+      expect(guessCategory(field("Patient", "chronicCond"))?.category).toBe("health");
+      expect(guessCategory(field("Patient", "vaccineRecord"))?.category).toBe("health");
+      expect(guessCategory(field("Appointment", "diagnosis"))?.category).toBe("health");
+    });
+
     it("นิติบุคคลไม่ใช่เจ้าของข้อมูลส่วนบุคคล จึงถูกลดความเชื่อมั่นลง", () => {
       const company = guessCategory(field("Company", "taxId"));
       const person = guessCategory(field("Customer", "taxId"));
