@@ -36,11 +36,16 @@ plus a description of the security measures required by section 37.
 Open Claude Code in the project you want to protect, then:
 
 ```
-/plugin marketplace add ksmaster03/arak
+/plugin marketplace add https://github.com/ksmaster03/arak.git
 /plugin install arak@arak
 ```
 
 Restart Claude Code, then run `/arak:setup`.
+
+> **Why the full URL?** While this repository is private, the `owner/repo` shorthand clones over
+> SSH by default, which fails unless you have an SSH key loaded in `ssh-agent`. The HTTPS URL goes
+> through the git credential helper you already use. Set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` if you
+> would rather type the shorthand. Once the repository is public, either form works.
 
 That is the whole install. The plugin bundles its hooks **and** the full `arak` CLI into
 dependency-free files, so there is no `npm install`, no `settings.json` to hand-edit, and nothing
