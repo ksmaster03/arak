@@ -1,5 +1,6 @@
 {
   "name": "arak",
+  "description": "เครื่องมือมาร์กข้อมูลส่วนบุคคลตั้งแต่ตอนเขียนโค้ด สำหรับทีมที่ต้องทำ RoPA ตาม PDPA · Personal-data marking and Thai PDPA tooling",
   "owner": {
     "name": "Toptier Innovation"
   },
