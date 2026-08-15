@@ -1,10 +1,8 @@
 {
   "name": "arak",
+  "description": "ถามให้มาร์กข้อมูลส่วนบุคคลทันทีที่ฟิลด์ถูกเขียน แล้วเก็บเป็นแคตตาล็อกสำหรับออก RoPA ตาม PDPA · Asks for a PDPA marking the moment a personal-data field is written",
   "version": "0.1.0",
-  "description": "ถามให้มาร์กข้อมูลส่วนบุคคลทันทีที่ฟิลด์ถูกเขียน แล้วเก็บเป็นแคตตาล็อกสำหรับออก RoPA ตาม PDPA",
   "author": {
     "name": "Toptier Innovation"
-  },
-  "homepage": "https://arak.growgenius.co.th",
-  "license": "SEE LICENSE IN LICENSE"
+  }
 }

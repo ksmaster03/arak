@@ -1,14 +1,16 @@
 {
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
   "name": "arak",
-  "description": "เครื่องมือมาร์กข้อมูลส่วนบุคคลตั้งแต่ตอนเขียนโค้ด สำหรับทีมที่ต้องทำ RoPA ตาม PDPA · Personal-data marking and Thai PDPA tooling",
+  "description": "Personal-data marking and Thai PDPA tooling for TypeScript and Prisma projects",
   "owner": {
-    "name": "Toptier Innovation"
+    "name": "Toptier Innovation",
+    "url": "https://github.com/ksmaster03/arak"
   },
   "plugins": [
     {
       "name": "arak",
       "source": "./packages/plugin",
-      "description": "ถามให้มาร์กข้อมูลส่วนบุคคลทันทีที่ฟิลด์ถูกเขียน แล้วเก็บเป็นแคตตาล็อกสำหรับออก RoPA ตาม PDPA"
+      "description": "Asks for a PDPA marking the moment a personal-data field is written, and keeps the record that section 39 asks for"
     }
   ]
 }
