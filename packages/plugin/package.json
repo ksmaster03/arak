@@ -9,11 +9,10 @@
   "scripts": {
     "build": "node build.mjs"
   },
-  "dependencies": {
-    "@arak/cli": "workspace:*",
-    "@arak/core": "workspace:*"
-  },
+  "//": "ตั้งใจไม่มี dependencies เลย — Claude Code ติดตั้ง Node dependency ของปลั๊กอินเข้าไปในสำเนาที่แคช ถ้าประกาศ workspace:* ไว้ การติดตั้งจะพังเพราะแพ็กเกจพวกนั้นไม่มีอยู่บน npm ทุกอย่างถูก bundle เข้าไฟล์ปลายทางแล้ว",
   "devDependencies": {
+    "@arak/cli": "workspace:*",
+    "@arak/core": "workspace:*",
     "esbuild": "^0.24.0"
   }
 }

@@ -14,8 +14,8 @@
 | `.claude-plugin/` | แคตตาล็อก marketplace ติดตั้งจากพาธในเครื่องได้เลย |
 | `examples/demo-app` | สคีมาสมมติที่ใช้เป็นสนามทดสอบ · แคตตาล็อกปิดงานครบ 14 มาร์ก |
 
-ทดสอบกับสคีมาจริงสี่ชุดแล้ว — DockSync 27 ฟิลด์ · FixFlow 27 · SCHEM 43 · คลินิกสมมติ 28
-และสแกน DockSync API เจอข้อมูลใน seed 129 จุด
+ทดสอบกับสคีมาการผลิตจริงสี่ชุดแล้ว (ระบบคลังสินค้า · ซ่อมบำรุง · บุคคล · คลินิกสมมติ)
+จำนวนฟิลด์อยู่ที่ 27-43 ต่อระบบ · รายละเอียดของแต่ละระบบเก็บไว้นอก repo โดยตั้งใจ
 
 ## การตัดสินใจเรื่องฮุกที่เคาะไปแล้ว (14 ส.ค.)
 
@@ -45,7 +45,7 @@
 
 1. **ยังไม่เคยเห็นฮุกทำงานในเซสชันจริง** — ที่ทดสอบคือป้อน JSON เข้า stdin เอง
    และยังไม่เคยรัน `/plugin marketplace add` จริง (เป็นคำสั่งโต้ตอบ ทำแทนไม่ได้)
-   ลองที่ **`D:\Projectrak-sandbox`** ซึ่งเป็นโปรเจกต์เปล่าที่ทำไว้ให้ลองโดยเฉพาะ
+   ลองที่ **`D:/Project/arak-sandbox`** ซึ่งเป็นโปรเจกต์เปล่าที่ทำไว้ให้ลองโดยเฉพาะ
    ควรได้ผล `ยังไม่ได้ตัดสิน 28 · ข้อมูลอ่อนไหว ม.26 5`
 
 2. **ตัวสร้าง RoPA** — `arak ropa` ออก .docx/.xlsx ตาม ม.39 ทั้งเจ็ดหัวข้อ
@@ -90,7 +90,7 @@ cd D:/Project/arak
 pnpm install && pnpm run build && pnpm test
 
 mkdir -p .scratch/try/prisma
-cp <schema ของโปรเจกต์ไหนก็ได้> .scratch/try/prisma/
+cp <schema ของโปรเจกต์ที่อยากลอง> .scratch/try/prisma/
 node packages/cli/dist/index.js init --root .scratch/try
 node packages/cli/dist/index.js sync --root .scratch/try
 ```

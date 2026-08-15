@@ -42,14 +42,13 @@ importers:
   packages/detect-th: {}
 
   packages/plugin:
-    dependencies:
+    devDependencies:
       '@arak/cli':
         specifier: workspace:*
         version: link:../cli
       '@arak/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
       esbuild:
         specifier: ^0.24.0
         version: 0.24.2
