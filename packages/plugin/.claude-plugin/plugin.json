@@ -1,6 +1,6 @@
 {
   "name": "arak",
-  "description": "ถามให้มาร์กข้อมูลส่วนบุคคลทันทีที่ฟิลด์ถูกเขียน แล้วเก็บเป็นแคตตาล็อกสำหรับออก RoPA ตาม PDPA · Asks for a PDPA marking the moment a personal-data field is written",
+  "description": "Asks for a PDPA marking the moment a personal-data field is written, and keeps the record that section 39 of the Thai PDPA asks for",
   "version": "0.1.0",
   "author": {
     "name": "Toptier Innovation"

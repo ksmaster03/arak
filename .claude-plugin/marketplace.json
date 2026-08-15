@@ -10,7 +10,7 @@
     {
       "name": "arak",
       "source": "./packages/plugin",
-      "description": "Asks for a PDPA marking the moment a personal-data field is written, and keeps the record that section 39 asks for"
+      "description": "Asks for a PDPA marking the moment a personal-data field is written, and keeps the record that section 39 of the Thai PDPA asks for"
     }
   ]
 }
