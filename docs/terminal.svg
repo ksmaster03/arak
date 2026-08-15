@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" role="img" aria-label="arak sync running against a clinic schema and reporting 28 undecided fields, 5 of them sensitive under section 26">
+  <title>arak sync — real output against the sandbox clinic schema</title>
+
+  <defs>
+    <style>
+      .sans { font-family: "Segoe UI", "Helvetica Neue", Arial, "Noto Sans Thai", sans-serif; }
+      .mono { font-family: Consolas, Menlo, "DejaVu Sans Mono", monospace; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="560" rx="8" fill="#12161A"/>
+  <rect x="0" y="0" width="1000" height="40" rx="8" fill="#1C232A"/>
+  <rect x="0" y="30" width="1000" height="10" fill="#1C232A"/>
+  <circle cx="24" cy="20" r="6" fill="#3A434C"/>
+  <circle cx="46" cy="20" r="6" fill="#3A434C"/>
+  <circle cx="68" cy="20" r="6" fill="#3A434C"/>
+  <text class="mono" x="500" y="25" font-size="13" fill="#6E7A85" text-anchor="middle">arak-sandbox</text>
+
+  <g class="mono" font-size="14.5">
+    <text x="26" y="76" fill="#6DBF9B">$</text>
+    <text x="46" y="76" fill="#ECEEF0">arak sync</text>
+
+    <text x="26" y="112" fill="#6E7A85">สคีมา 1 ไฟล์</text>
+    <text x="180" y="112" fill="#6E7A85">แคตตาล็อก pii-catalog.yaml</text>
+
+    <text x="26" y="152" fill="#ECEEF0" font-weight="700">ยังไม่ได้ตัดสิน</text>
+    <text x="26" y="176" fill="#6E7A85" font-size="13.5">เติม /// @pii(...) หรือ /// @not-pii(reason=...) ไว้เหนือฟิลด์</text>
+
+    <g fill="#E0C36A">
+      <text x="34" y="208">?</text><text x="34" y="232">?</text><text x="34" y="256">?</text>
+      <text x="34" y="280">?</text><text x="34" y="304">?</text><text x="34" y="328">?</text>
+    </g>
+    <g fill="#ECEEF0">
+      <text x="56" y="208">prisma:Appointment.diagnosis</text>
+      <text x="56" y="232">prisma:Patient.allergies</text>
+      <text x="56" y="256">prisma:Patient.chronicCond</text>
+      <text x="56" y="280">prisma:Patient.hn</text>
+      <text x="56" y="304">prisma:Patient.nationalId</text>
+      <text x="56" y="328">prisma:Staff.licenceNo</text>
+    </g>
+    <g fill="#5C6771" font-size="13.5">
+      <text x="380" y="208">prisma/schema.prisma:91</text>
+      <text x="380" y="232">prisma/schema.prisma:42</text>
+      <text x="380" y="256">prisma/schema.prisma:43</text>
+      <text x="380" y="280">prisma/schema.prisma:31</text>
+      <text x="380" y="304">prisma/schema.prisma:34</text>
+      <text x="380" y="328">prisma/schema.prisma:66</text>
+    </g>
+    <g fill="#8A949E" font-size="13.5">
+      <text x="640" y="208">น่าจะเป็น health</text>
+      <text x="640" y="232">น่าจะเป็น health</text>
+      <text x="640" y="256">น่าจะเป็น health</text>
+      <text x="640" y="280">น่าจะเป็น identity</text>
+      <text x="640" y="304">น่าจะเป็น government_id</text>
+      <text x="640" y="328">น่าจะเป็น government_id</text>
+    </g>
+    <text x="56" y="354" fill="#5C6771" font-size="13.5">… และอีก 22 รายการ</text>
+
+    <text x="26" y="398" fill="#ECEEF0" font-weight="700">สรุป</text>
+
+    <text x="46" y="428" fill="#8A949E">มาร์กแล้ว</text>
+    <text x="330" y="428" fill="#6DBF9B">0</text>
+
+    <text x="46" y="454" fill="#8A949E">ยังไม่ได้ตัดสิน</text>
+    <text x="330" y="454" fill="#E0C36A">28</text>
+
+    <text x="46" y="480" fill="#8A949E">ระบุว่าไม่ใช่</text>
+    <text x="330" y="480" fill="#ECEEF0">0</text>
+
+    <text x="46" y="506" fill="#8A949E">ข้อมูลอ่อนไหว ม.26</text>
+    <text x="330" y="506" fill="#DE8570">5</text>
+
+    <text x="26" y="540" fill="#6DBF9B">เขียนแล้ว pii-catalog.yaml</text>
+  </g>
+</svg>

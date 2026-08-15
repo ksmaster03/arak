@@ -2,7 +2,7 @@
   "name": "@arak/cli",
   "version": "0.1.0",
   "description": "The arak command line — sync the personal-data catalog with the code and gate CI on it",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "bin": {
     "arak": "./dist/index.js"

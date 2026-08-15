@@ -1,88 +1,93 @@
-# Arak — อารักษ์
+<img src="docs/banner.svg" alt="Arak — mark personal data while the code is being written" width="100%">
 
-**มาร์กข้อมูลส่วนบุคคลตั้งแต่ตอนที่โค้ดกำลังถูกเขียน แล้วออกเป็นบันทึกรายการกิจกรรมการประมวลผลตาม PDPA**
+<p align="right"><strong>English</strong> · <a href="README.th.md">ภาษาไทย</a></p>
 
-> Arak marks personal data while the code is being written, not months later in a CI report
-> nobody reads. It keeps a reviewable catalog of every field that holds personal data — with its
-> purpose, legal basis and retention — and turns that into a Thai PDPA Record of Processing
-> Activities. Apache-2.0.
+Arak marks personal data **while the code is being written** — not months later in a CI report
+nobody reads. It keeps a reviewable catalog of every field that holds personal data, with its
+purpose, legal basis and retention, and turns that into a Thai PDPA Record of Processing
+Activities (RoPA).
+
+It ships as a Claude Code plugin, a CLI, and a Thai PII detection library.
+
+**Free for personal, educational, research and nonprofit use. Commercial use requires a licence** —
+see [COMMERCIAL.md](COMMERCIAL.md).
 
 ---
 
-## ปัญหา
+## The problem
 
-เครื่องมือความเป็นส่วนตัวทุกวันนี้เป็นการ **สแกนย้อนหลัง** โค้ดขึ้นไปอยู่บน CI แล้ว
-รายงานโผล่มาทีหลัง ตอนนั้นฟิลด์นั้นถูกใช้งานไปทั่วระบบแล้วและไม่มีใครกลับไปแก้
+Privacy tooling today **scans after the fact**. The report arrives once the code is already on CI,
+by which time the field is used all over the system and nobody goes back to fix it.
 
-จังหวะที่ถูกคือ **ตอนที่ฟิลด์เพิ่งถูกเขียนเสร็จ** ซึ่งเป็นจังหวะที่คนเขียน (หรือผู้ช่วย AI ที่เขียนแทน)
-ยังจำได้ว่าฟิลด์นี้มีไว้ทำอะไร
+The right moment is **the instant the field is written**, while whoever wrote it — human or AI
+assistant — still remembers what it is for.
 
-และไม่มีเครื่องมือเจ้าไหนรู้จักกฎหมายไทย — มาตรา 39 บังคับให้บันทึกครบเจ็ดหัวข้อ
-ตั้งแต่ข้อมูลที่เก็บ วัตถุประสงค์ ผู้ควบคุม ระยะเวลาเก็บรักษา สิทธิและวิธีเข้าถึง
-ไปจนถึงเงื่อนไขการปฏิเสธคำขอ บวกคำอธิบายมาตรการความมั่นคงปลอดภัยตามมาตรา 37
+And no existing tool knows Thai law. Section 39 of the Personal Data Protection Act requires a
+record covering seven items: what is collected, why, who controls it, how long it is kept, the
+rights and access conditions, disclosures under section 27, and grounds for refusing a request —
+plus a description of the security measures required by section 37.
 
-## เริ่มใช้
+## How it works
 
-เปิด Claude Code ที่โปรเจกต์ที่อยากติดตั้ง แล้วสั่งสองบรรทัด
+<img src="docs/loop.svg" alt="A field is written, the hook asks, a human decides, the record follows" width="100%">
+
+## Install
+
+Open Claude Code in the project you want to protect, then:
 
 ```
-/plugin marketplace add D:/Project/arak
+/plugin marketplace add ksmaster03/arak
 /plugin install arak@arak
 ```
 
-รีสตาร์ต Claude Code แล้ว
+Restart Claude Code, then run `/arak:setup`.
 
-```
-/arak:setup
-```
+That is the whole install. The plugin bundles its hooks **and** the full `arak` CLI into
+dependency-free files, so there is no `npm install`, no `settings.json` to hand-edit, and nothing
+to add to your `PATH`.
 
-เท่านี้จบ ปลั๊กอินมาพร้อมทั้งฮุกและคำสั่ง `arak` ในตัว
-**ไม่ต้อง npm install ไม่ต้องแก้ settings.json และไม่ต้องมี Node dependency อะไรเพิ่ม**
-เพราะทุกอย่างถูก bundle เป็นไฟล์เดียวจบ
-
-| คำสั่ง | ทำอะไร |
+| Command | What it does |
 |---|---|
-| `/arak:setup` | ตั้งค่าให้โปรเจกต์นี้ตั้งแต่ต้น แล้วช่วยเติมวัตถุประสงค์ตาม ม.39 |
-| `/arak:mark` | ไล่ปิดงานฟิลด์ที่ยังไม่ได้ตัดสินทีละตัว |
-| `/arak:check` | ดูสถานะ และหาข้อมูลจริงที่ปนอยู่ในไฟล์ |
+| `/arak:setup` | Sets the project up from scratch, then helps you fill in the section 39 fields |
+| `/arak:mark` | Walks through undecided fields one at a time |
+| `/arak:check` | Reports status, and finds real personal data sitting in your files |
 
-### ใช้จากบรรทัดคำสั่งอย่างเดียวก็ได้
+<details>
+<summary>Using the CLI on its own</summary>
 
 ```bash
-git clone <repo> && cd arak
+git clone https://github.com/ksmaster03/arak.git && cd arak
 pnpm install && pnpm run build
 
-node packages/cli/dist/index.js init      # สร้าง arak.config.yaml + pii-catalog.yaml
-node packages/cli/dist/index.js sync      # อ่านสคีมา แล้วปรับแคตตาล็อกให้ตรง
-node packages/cli/dist/index.js baseline  # ยกของเก่าเป็นหนี้ที่รับรู้แล้ว
-node packages/cli/dist/index.js status    # ด่านสำหรับ CI
-node packages/cli/dist/index.js scan      # หาข้อมูลจริงที่ปนอยู่ในไฟล์
+node packages/cli/dist/index.js init      # create arak.config.yaml + pii-catalog.yaml
+node packages/cli/dist/index.js sync      # read the schema, reconcile the catalog
+node packages/cli/dist/index.js baseline  # park existing fields as acknowledged debt
+node packages/cli/dist/index.js status    # the CI gate
+node packages/cli/dist/index.js scan      # find real personal data in files
 ```
 
-หรือใช้ไฟล์ที่ bundle แล้วซึ่งไม่ต้องมี node_modules เลย —
-`node packages/plugin/bin/arak.mjs <คำสั่ง>`
+`packages/plugin/bin/arak.mjs` is the same CLI bundled with zero dependencies — it runs from a
+bare checkout with no `node_modules` at all.
+</details>
 
-ติดตั้งกับโปรเจกต์ที่เขียนมาแล้วสองปี ครั้งแรกจะเจอฟิลด์ค้างหลายสิบตัวพร้อมกัน
-`arak baseline` ยกทั้งหมดไปเป็น **หนี้เก่าที่รับรู้แล้ว** — ยังโชว์ในรายงานทุกครั้ง
-แต่ไม่ทำให้ CI ตกและปลั๊กอินจะไม่เตือน ตั้งแต่นั้นไปจะเตือนเฉพาะสิ่งที่เขียนใหม่
-เครื่องมือความปลอดภัยที่แดงตั้งแต่วันแรกคือเครื่องมือที่ถูกปิดทิ้งในวันที่สอง
+## The first run
 
-`sync` ครั้งแรกจะเสนอรายการที่ *น่าจะ* เป็นข้อมูลส่วนบุคคลมาให้ตัดสิน
+<img src="docs/terminal.svg" alt="arak sync reporting 28 undecided fields, five of them sensitive under section 26" width="100%">
 
-```
-ยังไม่ได้ตัดสิน  เติม /// @pii(...) หรือ /// @not-pii(reason=...) ไว้เหนือฟิลด์
-  ? prisma:Customer.taxId       prisma/schema.prisma:1115 น่าจะเป็น government_id
-  ? prisma:Customer.email       prisma/schema.prisma:1117 น่าจะเป็น contact
-  ? prisma:LoginLog.ip          prisma/schema.prisma:173  น่าจะเป็น device
-```
+Installing into a codebase written two years ago will surface dozens of pending fields at once.
+`arak baseline` moves them all to **acknowledged debt** — still counted and reported every run,
+but no longer failing CI and no longer nagging you in the editor. From then on you are only asked
+about what you write next.
 
-## การมาร์ก
+A privacy tool that goes red on day one is a privacy tool that gets switched off on day two.
 
-เขียนไว้ในคอมเมนต์เอกสารของ Prisma ตรงเหนือฟิลด์ คำอธิบายภาษาคนที่มีอยู่แล้วไม่ต้องย้ายไปไหน
+## Marking
+
+Write it in the Prisma doc comment above the field. Any prose already there stays where it is.
 
 ```prisma
 model Customer {
-  /// เลขประจำตัวผู้เสียภาษี ใช้ออกใบกำกับ
+  /// Tax ID, used to issue invoices
   /// @pii(category=government_id, purposes=tax_invoice)
   taxId String?
 
@@ -92,34 +97,34 @@ model Customer {
   /// @pii(contact)
   phone String?
 
-  /// @not-pii(reason="รหัสอ้างอิงภายใน สร้างแบบสุ่ม ไม่ผูกกับตัวบุคคล")
+  /// @not-pii(reason="Internal reference, randomly generated, not tied to a person")
   refCode String
 }
 ```
 
-| คีย์ | ความหมาย |
+| Key | Meaning |
 |---|---|
-| `category` | หมวดข้อมูล — ใส่เป็นค่าเดี่ยวแบบทางลัดก็ได้ `@pii(contact)` |
-| `purposes` | อ้าง key ใน `purposes` ของแคตตาล็อก คั่นหลายอันด้วย `;` `\|` หรือ `+` |
-| `retention` | ISO-8601 duration เช่น `P5Y` — ใส่เมื่อฟิลด์นี้ต่างจากค่าของวัตถุประสงค์ |
-| `reason` | ใช้กับ `@not-pii` เท่านั้น |
+| `category` | Data category — a bare value is shorthand: `@pii(contact)` |
+| `purposes` | Keys declared in the catalog's `purposes`; separate several with `;` `\|` or `+` |
+| `retention` | ISO-8601 duration such as `P5Y`, when this field differs from its purpose |
+| `reason` | For `@not-pii` only |
 
-หมวดที่รองรับแบ่งเป็นสองชุด — ชุดทั่วไป (`identity` `government_id` `contact` `financial`
-`employment` `education` `location` `device` `behavioral` `media` `family` `vehicle` `credential`)
-และ **ชุดอ่อนไหวตามมาตรา 26** (`health` `disability` `belief_religion` `race_ethnicity`
-`political_opinion` `sexual_behavior` `criminal_record` `union` `genetic` `biometric`)
-ซึ่งจะถูกนับแยกในรายงานเพราะต้องได้ความยินยอมโดยชัดแจ้ง
+Categories come in two sets. The general ones — `identity` `government_id` `contact` `financial`
+`employment` `education` `location` `device` `behavioral` `media` `family` `vehicle` `credential` —
+and the **sensitive ones under section 26** — `health` `disability` `belief_religion`
+`race_ethnicity` `political_opinion` `sexual_behavior` `criminal_record` `union` `genetic`
+`biometric` — which are counted separately because they need explicit consent.
 
-## แคตตาล็อก
+## The catalog
 
-`pii-catalog.yaml` คือแหล่งความจริงเพียงที่เดียว และเป็นไฟล์ที่ commit เข้า git
+`pii-catalog.yaml` is the single source of truth, and it lives in git.
 
 ```yaml
 purposes:
   - key: tax_invoice
-    label: ออกใบกำกับภาษีตามที่กฎหมายกำหนด
-    legalBasis: legal_obligation   # ม.24(6)
-    retention: P5Y                 # ม.39(4)
+    label: Issue tax invoices and retain accounting records
+    legalBasis: legal_obligation   # s.24(6)
+    retention: P5Y                 # s.39(4)
 
 fields:
   - id: prisma:Customer.taxId
@@ -130,49 +135,40 @@ fields:
     source:
       kind: prisma
       file: prisma/schema.prisma
-      line: 1117
+      line: 29
       container: Customer
       field: taxId
 ```
 
-สองส่วนนี้เจ้าของต่างกัน และเครื่องมือเคารพเส้นแบ่งนี้เคร่งครัด
+Two halves, two owners, and the tool respects the line strictly:
 
-- `controller` `purposes` `access` `securityMeasures` — **เป็นของคน** เครื่องมือไม่แตะ
-  และคอมเมนต์ที่เขียนไว้จะไม่หายตอน sync
-- `fields` — เครื่องมือดูแลให้ตรงกับซอร์สเสมอ แต่ **ไม่ลบอะไรทิ้งเอง**
-  ฟิลด์ที่หายจากโค้ดจะถูกทำเครื่องหมาย `orphaned` เพราะการที่โค้ดลบคอลัมน์
-  ไม่ได้แปลว่าข้อมูลในฐานถูกลบไปด้วย
+- `controller` `purposes` `access` `securityMeasures` are **yours**. The tool never edits them, and
+  comments you write there survive every sync.
+- `fields` is kept in step with the source, but **nothing is ever deleted**. A field that disappears
+  from the code is flagged `orphaned`, because dropping a column does not delete the data behind it.
 
-## ปิดวงตอนเขียนโค้ด
+## Decision rules
 
-[ปลั๊กอินสำหรับ Claude Code](packages/plugin/) ทำให้ไม่ต้องรอถึง CI
+Three rules, and only three:
 
-ทันทีที่ฟิลด์ใหม่ถูกเขียนลงสคีมา ฮุกจะบอกกลับไปในเทิร์นเดียวกันว่าฟิลด์ไหนยังไม่ได้ตัดสิน
-พร้อมหมวดที่เดาได้และ **รายการวัตถุประสงค์ที่ประกาศไว้แล้วให้เลือก**
+1. A field with `@pii(...)` in the code — **the code wins**, because it travels with the code.
+2. No annotation but already in the catalog — **the catalog wins**, because a human put it there.
+3. Neither — the guesser proposes it as `unmarked` for a human to decide.
 
-หัวใจของมันคือสิ่งที่มันไม่ยอมทำ — **ไม่เดา `purposes` ให้** เพราะหมวดข้อมูลอ่านจากโค้ดได้
-แต่วัตถุประสงค์กับฐานทางกฎหมายเป็นการตัดสินใจทางธุรกิจ
-`email` ที่เก็บไว้ส่งใบเสร็จ (ฐาน: สัญญา) กับที่เก็บไว้ส่งโปรโมชัน (ฐาน: ความยินยอม)
-หน้าตาในโค้ดเหมือนกันทุกตัวอักษร แต่ผลทางกฎหมายคนละเรื่อง
-ถ้าไม่มีวัตถุประสงค์ไหนตรง ปลั๊กอินสั่งให้หยุดแล้วถามคน — RoPA ที่สวยแต่ผิดอันตรายกว่าไม่มี
+Statuses are `unmarked` (new, undecided — hook asks, CI fails), `deferred` (acknowledged debt — no
+nagging, CI passes, still counted), `marked`, and `not-pii`. Once a human decides, the guesser's
+`confidence` and `detectedBy` are dropped rather than left to confuse the next reader.
 
-## กฎการชี้ขาด
+**Step 3 is never automated past the category.** Data categories can be read off the code, but
+purposes and legal bases are business decisions. An `email` kept to send receipts (basis: contract)
+and one kept to send promotions (basis: consent) look identical in code and are governed by
+different law. When nothing in the catalog fits, the plugin stops and asks. A RoPA that looks
+tidy but is wrong is more dangerous than no RoPA at all.
 
-มีสามข้อ และมีแค่สามข้อ
+## Finding real data in files
 
-1. ฟิลด์ที่มี `@pii(...)` ในโค้ด — **คำอธิบายในโค้ดชนะ** เพราะมันเดินทางไปพร้อมโค้ด
-2. ฟิลด์ที่ไม่มี annotation แต่มีอยู่ในแคตตาล็อกแล้ว — **ของเดิมชนะ** เพราะคนเป็นคนใส่ไว้
-3. ไม่มีทั้งสองอย่าง — ตัวเดาเสนอเข้ามาในสถานะ `unmarked` ให้คนตัดสิน
-
-สถานะของฟิลด์มีสี่แบบ — `unmarked` (ใหม่ ยังไม่ตัดสิน · ฮุกเตือน · CI ตก) ·
-`deferred` (หนี้เก่าที่รับรู้แล้ว · ไม่เตือน · CI ผ่าน แต่ยังนับยอด) · `marked` · `not-pii`
-
-เมื่อคนตัดสินแล้ว ผลของตัวเดา (`confidence` / `detectedBy`) จะถูกลบทิ้ง ไม่ค้างไว้ให้สับสน
-
-## หาข้อมูลจริงที่ปนอยู่ในไฟล์
-
-`sync` ดูแลว่า *สคีมา* ประกาศอะไรไว้ ส่วน `scan` ดูว่า *ไฟล์ในโปรเจกต์* มีข้อมูลของคนจริงปนอยู่ไหม
-— ไฟล์ seed, fixture, ตัวอย่าง SQL, log ที่เผลอ commit ตามมา
+`sync` covers what the *schema* declares. `scan` looks at whether the *files* contain real people's
+data — seed scripts, fixtures, sample SQL, a log that got committed by accident.
 
 ```
 $ arak scan
@@ -181,100 +177,108 @@ $ arak scan
   thai_national_id     11••••••••66     prisma/seed.ts:3:40
   thai_phone           08••••••••78     prisma/seed.ts:3:64
   email                so••••••••th     prisma/seed.ts:3:87
-  thai_address         หม••••••••าร     prisma/seed.ts:6:32
 ```
 
-**ค่าจริงไม่เคยถูกพิมพ์ออกมา** เห็นแค่หัวกับท้าย เพราะ log ของ CI อยู่นานกว่าไฟล์ที่ถูกสแกนเสียอีก
+**Real values are never printed.** You see the first and last characters only, because CI logs
+outlive the files they scanned.
 
-ทุกโปรเจกต์มีไฟล์ที่ตั้งใจให้มีข้อมูลรูปร่างเหมือนของจริง สั่งข้ามได้ทั้งใน `arak.config.yaml`
+Detectors live in `@arak/detect-th`, which is usable on its own:
+
+| Type | How it is detected |
+|---|---|
+| Thai national ID · tax ID | 13 digits **with the check digit verified**, which throws out ~91% of random reference codes |
+| Phone | Real structure — mobile 06/08/09 plus eight digits, `+66` supported |
+| Email · IPv4 | Standard formats |
+| Thai personal name | Anchored on the honorifics นาย นาง นางสาว น.ส. ด.ช. ด.ญ. |
+| Thai address | ต. อ. จ. แขวง เขต ซอย หมู่ ถนน — adjacent parts merge into one address |
+| Licence plate | Two Thai consonants, with or without a leading digit |
+| Credit card | 14–19 digits with Luhn |
+| Passport · bank account · postal code | **Context word required nearby**, otherwise false positives drown everything |
+
+> The Thai ID check digit has a measured blind spot: the third digit carries weight 11, which is
+> divisible by 11 and therefore contributes nothing to the remainder. **Change the third digit to
+> anything and the formula cannot tell.** Other positions slip through about 1.7% of the time.
+> Good enough to screen with, never good enough to verify identity with.
+
+Files that deliberately contain realistic-looking data can be skipped:
 
 ```yaml
 scan:
   ignore:
     - "**/test/**"
-    - "docs/ตัวอย่าง-*.md"
 ```
 
-หรือจากบรรทัดคำสั่งด้วย `--ignore "<glob>"` ใส่ซ้ำได้
+or `--ignore "<glob>"` on the command line, repeatable.
 
-ตัวตรวจอยู่ในแพ็กเกจ `@arak/detect-th` ซึ่งใช้แยกจาก Arak ได้
-
-| ชนิด | วิธีตรวจ |
-|---|---|
-| เลขประจำตัวประชาชน · เลขผู้เสียภาษี | สิบสามหลัก **พร้อมหลักตรวจสอบ** จึงกรองรหัสอ้างอิงในระบบทิ้งได้ราว 91% |
-| เบอร์โทร | ตรวจโครงสร้างจริง มือถือ 06/08/09 สิบหลัก · รองรับ `+66` |
-| อีเมล · ไอพี | ตามรูปแบบมาตรฐาน |
-| ชื่อคนไทย | อาศัยคำนำหน้า นาย นาง นางสาว น.ส. ด.ช. ด.ญ. |
-| ที่อยู่ไทย | ต. อ. จ. แขวง เขต ซอย หมู่ ถนน — ส่วนที่ติดกันถูกรวมเป็นที่อยู่เดียว |
-| ป้ายทะเบียน | พยัญชนะไทยสองตัวพร้อมเลขนำหน้าหรือไม่มีก็ได้ |
-| บัตรเครดิต | สิบสี่ถึงสิบเก้าหลักพร้อม Luhn |
-| หนังสือเดินทาง · เลขบัญชี · รหัสไปรษณีย์ | **ต้องมีคำบริบทอยู่ใกล้เท่านั้น** ไม่งั้นผลบวกลวงท่วม |
-
-> หลักตรวจสอบของบัตรประชาชนมีจุดบอดที่วัดแล้ว — หลักที่สามมีน้ำหนัก 11 จึงไม่มีผลต่อเศษเลย
-> **แก้หลักที่สามเป็นอะไรก็ได้ สูตรจับไม่ได้สักกรณี** ใช้คัดกรองได้ แต่ใช้ยืนยันตัวตนไม่ได้
-
-## ด่าน CI
+## CI gate
 
 ```yaml
 - run: node packages/cli/dist/index.js status
 ```
 
-- `0` — ทุกฟิลด์ถูกตัดสินแล้ว
-- `1` — ยังมีฟิลด์ที่ไม่ได้ตัดสิน หรือแคตตาล็อกมีข้อผิดพลาด เช่น มาร์กว่าเป็น PII แล้วแต่ไม่ระบุวัตถุประสงค์ (ม.39(2) บังคับ)
-- `2` — เรียกใช้ผิด หรืออ่านไฟล์ไม่ได้
+- `0` — every new field has been decided
+- `1` — undecided fields remain, or the catalog has an error such as a field marked as personal
+  data with no purpose (section 39(2) requires one)
+- `2` — called wrongly, or a file could not be read
 
-ใช้ `sync --check` เมื่ออยากบังคับว่าแคตตาล็อกที่ commit ไว้ต้องตรงกับสคีมาเสมอ
+Add `--strict` to make acknowledged debt fail too, once the team is ready to clear it.
+Use `sync --check` to require that the committed catalog always matches the schema.
 
-## สถานะ
+## Status
 
-รองรับ **TypeScript + Prisma** เป็นชุดแรก
+TypeScript + Prisma is the first supported stack.
 
-| ทำแล้ว | ยังไม่ทำ |
+| Done | Not yet |
 |---|---|
-| สคีมาแคตตาล็อกครบตาม ม.39 | ตัวสร้างเอกสาร RoPA (.docx/.xlsx) |
-| ตัวอ่านสคีมา Prisma + `@pii` | กฎ Semgrep ห้าม PII ไหลลง log |
-| เขียนแคตตาล็อกกลับโดยคอมเมนต์ไม่หาย | MCP server อ่านไฟล์แบบปิดบัง (ด้าน B) |
-| ตัวเดาจากชื่อฟิลด์ 39 กฎ | ตัวอ่าน OpenAPI และ TypeScript type |
-| ตัวตรวจค่าจริงของไทย 12 ชนิด | ชื่อไทยที่ไม่มีคำนำหน้า |
-| ตัวปิดบังที่ให้ตัวแทนคงที่และแปลงกลับได้ | ปล่อยขึ้น npm และ marketplace สาธารณะ |
-| ฮุก Claude Code สามตัว + เส้นฐาน | |
-| ปลั๊กอินติดตั้งได้จาก marketplace ในเครื่อง | |
-| `arak init` / `sync` / `baseline` / `status` / `scan` | |
+| Catalog schema covering section 39 | RoPA document generator (.docx/.xlsx) |
+| Prisma schema reader with `@pii` | Semgrep rules that stop PII reaching logs |
+| Catalog writes that preserve your comments | MCP server for redacted file reads |
+| 39 field-name heuristics | OpenAPI and TypeScript type readers |
+| 12 Thai value detectors | Thai names without an honorific |
+| Deterministic, reversible redactor | Publishing to npm and a public marketplace |
+| Three Claude Code hooks plus baselining | |
+| `init` / `sync` / `baseline` / `status` / `scan` | |
 
-ตัวเดาในตอนนี้เดาจากชื่อฟิลด์และชนิดข้อมูลเท่านั้น เป็นของชั่วคราวเพื่อให้มีของให้ตัดสินตั้งแต่วันแรก
-ทุกกฎถูกปรับจากการรันกับสคีมาจริงสี่ชุด — ระบบคลังสินค้า ระบบซ่อมบำรุง ระบบบุคคล และระบบคลินิก
+The field-name guesser reads names and types only. It exists so there is something to decide on
+day one, and every rule in it was tuned against four production schemas — a warehouse system, a
+maintenance system, an HR system, and the clinic schema in
+`arak-sandbox`.
 
-## พัฒนา
+## Development
 
 ```bash
-pnpm test          # 155 เทสต์
+pnpm test        # 155 tests
 pnpm run build
 pnpm run typecheck
 ```
 
-โครงสร้าง
-
 ```
-packages/core       โครงแคตตาล็อก · กฎการชี้ขาด · อ่าน/เขียน YAML · ตัวเดาจากชื่อฟิลด์
-packages/prisma     ตัวอ่านสคีมา Prisma และ @pii ในคอมเมนต์
-packages/detect-th  ตัวตรวจค่าจริงของไทย และตัวปิดบังที่แปลงกลับได้ (ไม่มี dependency)
-packages/cli        คำสั่ง arak
-packages/plugin     ปลั๊กอิน Claude Code — ฮุก + คำสั่ง + arak ที่ bundle แล้ว
-examples/demo-app   สคีมาสมมติที่ใช้เป็นสนามทดสอบ
-.claude-plugin/     แคตตาล็อก marketplace สำหรับติดตั้งจากพาธในเครื่อง
+packages/core       Catalog model · decision rules · YAML I/O · field-name heuristics
+packages/prisma     Prisma schema reader and the @pii annotations
+packages/detect-th  Thai value detectors and the reversible redactor (no dependencies)
+packages/cli        The arak command
+packages/plugin     Claude Code plugin — hooks, commands, and a bundled arak
+examples/demo-app   A worked schema used as a test bed
+.claude-plugin/     Marketplace catalog
 ```
 
-ปลั๊กอินถูก bundle ด้วย esbuild เป็นไฟล์เดียวต่อจุดเข้า **โดยตั้งใจ**
-เพราะ Claude Code ติดตั้งปลั๊กอินด้วยการคัดลอกเฉพาะโฟลเดอร์ปลั๊กอินไปไว้ในแคช
-(โหมด link ใช้บนวินโดวส์ไม่ได้) ถ้ายัง import ข้ามไปแพ็กเกจอื่นในเวิร์กสเปซ
-ตัวที่ถูกคัดลอกไปจะพังทันทีเพราะ symlink ของ pnpm ไม่ได้ตามไปด้วย
+The whole project has exactly one runtime dependency, [`yaml`](https://github.com/eemeli/yaml).
+For a tool that reads other people's schemas and data, the dependency count is part of the
+trust story.
 
-มี dependency ตอนรันจริงตัวเดียวทั้งโปรเจกต์คือ [`yaml`](https://github.com/eemeli/yaml)
-สำหรับเครื่องมือที่ต้องอ่านสคีมาและข้อมูลของคนอื่น จำนวน dependency คือส่วนหนึ่งของความน่าเชื่อถือ
+The plugin is bundled with esbuild into one file per entry point **on purpose**: Claude Code
+installs a plugin by copying only the plugin directory into its cache, and link mode is
+unavailable on Windows, so anything importing across the workspace would break on arrival.
 
-กฎของตัวตรวจทุกข้อถูกปรับจากการรันกับของจริง ไม่ใช่จากการนั่งเดา
-ทุกครั้งที่แก้กฎเพราะเจอเคสจริง **ให้เพิ่มเคสนั้นลงเทสต์พร้อมคอมเมนต์ว่าเจอมาจากไหน**
+Every detector rule was tuned against real data, not invented at a desk. When you change a rule
+because of a case you hit, **add that case to the tests with a comment saying where it came from.**
 
-## สัญญาอนุญาต
+## License
 
-Apache-2.0 — ดู [LICENSE](LICENSE)
+[PolyForm Noncommercial License 1.0.0](LICENSE) — source available, not open source.
+
+Free for personal use, hobby projects, research, education, charities and government.
+**Any use by or for a for-profit company needs a commercial licence, including purely internal
+use.** See [COMMERCIAL.md](COMMERCIAL.md) for what that covers and how to get one.
+
+Whatever Arak produces — your catalog, your RoPA — is entirely yours, with no strings attached.

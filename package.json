@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Mark personal data while the code is being written — PDPA data inventory and RoPA for TypeScript + Prisma projects",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "engines": {
     "node": ">=20"

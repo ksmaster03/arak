@@ -2,7 +2,7 @@
   "name": "@arak/prisma",
   "version": "0.1.0",
   "description": "Reads Prisma schemas and the @pii annotations written in their doc comments",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

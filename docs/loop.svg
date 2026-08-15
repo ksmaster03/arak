@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430" role="img" aria-label="The loop: a field is written, the hook asks, the developer marks it, the catalog stays true, the RoPA falls out">
+  <title>How Arak closes the loop</title>
+
+  <defs>
+    <style>
+      .sans { font-family: "Segoe UI", "Helvetica Neue", Arial, "Noto Sans Thai", sans-serif; }
+      .mono { font-family: Consolas, Menlo, "DejaVu Sans Mono", monospace; }
+      .step { fill: #12161A; font-weight: 700; }
+      .body { fill: #545C65; }
+      .num  { fill: #17566F; font-weight: 700; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#C9CFD4"/>
+    </marker>
+    <marker id="arrowBack" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9E3620"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="430" fill="#F8F9FA" stroke="#C9CFD4"/>
+
+  <text class="sans" x="40" y="52" font-size="21" font-weight="700" fill="#12161A">The loop closes inside one turn</text>
+  <text class="sans" x="40" y="80" font-size="16" fill="#545C65">ปิดวงในเทิร์นเดียว ตอนที่ยังจำได้ว่าฟิลด์นี้มีไว้ทำอะไร</text>
+
+  <!-- 1 -->
+  <g transform="translate(40, 120)">
+    <rect width="250" height="150" rx="4" fill="#FFFFFF" stroke="#C9CFD4"/>
+    <text class="mono num" x="18" y="34" font-size="14">01</text>
+    <text class="sans step" x="18" y="66" font-size="16">A field is written</text>
+    <text class="sans body" x="18" y="90" font-size="14">มีฟิลด์ใหม่ในสคีมา</text>
+    <rect x="18" y="106" width="214" height="28" rx="3" fill="#F2F4F5"/>
+    <text class="mono" x="28" y="125" font-size="13" fill="#12161A">lineUserId String?</text>
+  </g>
+
+  <line x1="298" y1="195" x2="332" y2="195" stroke="#C9CFD4" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 2 -->
+  <g transform="translate(340, 120)">
+    <rect width="250" height="150" rx="4" fill="#FFFFFF" stroke="#17566F" stroke-width="2"/>
+    <text class="mono num" x="18" y="34" font-size="14">02</text>
+    <text class="sans step" x="18" y="66" font-size="16">The hook asks</text>
+    <text class="sans body" x="18" y="90" font-size="14">ฮุกทักทันที ไม่รอถึง CI</text>
+    <rect x="18" y="106" width="214" height="28" rx="3" fill="#DCE9EE"/>
+    <text class="mono" x="28" y="125" font-size="12.5" fill="#17566F">น่าจะเป็น identity — ยังไม่ตัดสิน</text>
+  </g>
+
+  <line x1="598" y1="195" x2="632" y2="195" stroke="#C9CFD4" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3 -->
+  <g transform="translate(640, 120)">
+    <rect width="250" height="150" rx="4" fill="#FFFFFF" stroke="#C9CFD4"/>
+    <text class="mono num" x="18" y="34" font-size="14">03</text>
+    <text class="sans step" x="18" y="66" font-size="16">A human decides</text>
+    <text class="sans body" x="18" y="90" font-size="14">คนเลือกวัตถุประสงค์เอง</text>
+    <rect x="18" y="106" width="214" height="28" rx="3" fill="#F2F4F5"/>
+    <text class="mono" x="28" y="125" font-size="11.5" fill="#12161A">/// @pii(identity, delivery)</text>
+  </g>
+
+  <line x1="898" y1="195" x2="932" y2="195" stroke="#C9CFD4" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 4 -->
+  <g transform="translate(910, 120)">
+    <rect width="250" height="150" rx="4" fill="#FFFFFF" stroke="#C9CFD4"/>
+    <text class="mono num" x="18" y="34" font-size="14">04</text>
+    <text class="sans step" x="18" y="66" font-size="16">The record follows</text>
+    <text class="sans body" x="18" y="90" font-size="14">แคตตาล็อก → RoPA ม.39</text>
+    <rect x="18" y="106" width="214" height="28" rx="3" fill="#F2F4F5"/>
+    <text class="mono" x="28" y="125" font-size="13" fill="#12161A">pii-catalog.yaml</text>
+  </g>
+
+  <!-- เส้นย้อนกลับ -->
+  <path d="M 1035 280 L 1035 320 L 165 320 L 165 280" fill="none" stroke="#9E3620" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowBack)"/>
+  <rect x="470" y="304" width="270" height="32" rx="3" fill="#F8F9FA"/>
+  <text class="sans" x="605" y="326" font-size="14" fill="#9E3620" text-anchor="middle">ทุกฟิลด์ใหม่วนกลับเข้าวงนี้เสมอ</text>
+
+  <line x1="40" y1="366" x2="1160" y2="366" stroke="#DDE2E6"/>
+  <text class="sans" x="40" y="398" font-size="14.5" fill="#545C65">
+    Step 03 is never automated. หมวดข้อมูลอ่านจากโค้ดได้ — แต่วัตถุประสงค์กับฐานทางกฎหมายเป็นการตัดสินใจของคน
+  </text>
+</svg>

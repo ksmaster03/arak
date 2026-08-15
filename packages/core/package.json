@@ -2,7 +2,7 @@
   "name": "@arak/core",
   "version": "0.1.0",
   "description": "Catalog model, reconciliation and the starter PII heuristic for Arak",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
