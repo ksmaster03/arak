@@ -35,17 +35,17 @@ Arak มาร์กข้อมูลส่วนบุคคล **ตั้ง
 เปิด Claude Code ที่โปรเจกต์ที่อยากติดตั้ง แล้ว
 
 ```
-/plugin marketplace add https://github.com/ksmaster03/arak.git
+/plugin marketplace add ksmaster03/arak
 /plugin install arak@arak
 ```
 
 รีสตาร์ต Claude Code แล้วสั่ง `/arak:setup`
 
-> **ทำไมต้องใส่ URL เต็ม** ระหว่างที่ repo ยังเป็น private การเขียนย่อ `owner/repo` จะ clone ผ่าน SSH
-> เป็นค่าเริ่มต้น ซึ่งไม่ผ่านถ้าเครื่องยังไม่มี SSH key โหลดไว้ใน `ssh-agent`
-> ส่วน URL แบบ HTTPS วิ่งผ่าน git credential helper ที่ใช้อยู่แล้ว
-> ถ้าอยากพิมพ์แบบย่อให้ตั้ง `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`
-> พอเปิดเป็น public แล้วใช้ได้ทั้งสองแบบ
+ใช้ผ่าน [claude.ai → Plugins → Add marketplace](https://claude.ai/settings/customize-plugins)
+ก็ได้ ใส่ `https://github.com/ksmaster03/arak`
+
+> ถ้าเครื่องไม่มี SSH key การเขียนย่อ `owner/repo` อาจยังลอง SSH ก่อน
+> ให้ใส่ URL เต็ม `https://github.com/ksmaster03/arak.git` หรือตั้ง `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`
 
 เท่านี้จบ ปลั๊กอิน bundle ทั้งฮุก **และ** คำสั่ง `arak` ตัวเต็มไว้ในไฟล์ที่ไม่มี dependency เลย
 จึงไม่ต้อง `npm install` ไม่ต้องแก้ `settings.json` เอง และไม่ต้องเพิ่มอะไรลง `PATH`
