@@ -1,0 +1,43 @@
+# ฮุกสำหรับ pre-commit framework (https://pre-commit.com)
+#
+# ติดตั้งในโปรเจกต์ปลายทางด้วย .pre-commit-config.yaml
+#
+#   repos:
+#     - repo: https://github.com/ksmaster03/arak
+#       rev: v0.1.0
+#       hooks:
+#         - id: arak-status
+#         - id: arak-scan
+#
+# ใช้ language: node ซึ่ง pre-commit จะติดตั้งรีโปนี้เป็นแพ็กเกจ npm แล้วเรียกผ่าน bin
+# ตัว bin ชี้ไปที่ bundle ที่ไม่มี dependency และถูก commit ไว้แล้ว การติดตั้งจึงไม่ต้อง build
+
+- id: arak-status
+  name: arak status — ฟิลด์ข้อมูลส่วนบุคคลต้องถูกตัดสินก่อน commit
+  description: >-
+    ตรวจว่าฟิลด์ที่เพิ่งเขียนลงสคีมาถูกตัดสินแล้วว่าเป็นข้อมูลส่วนบุคคลหรือไม่
+    ยิงเฉพาะตอนที่ไฟล์ .prisma ถูกแก้ เพราะนั่นคือช่วงเวลาที่คนเขียนยังจำได้ว่าฟิลด์นั้นมีไว้ทำอะไร
+  entry: arak status
+  language: node
+  files: \.prisma$
+  pass_filenames: false
+
+- id: arak-scan
+  name: arak scan — ห้ามมีข้อมูลส่วนบุคคลของจริงในไฟล์ที่กำลัง commit
+  description: >-
+    สแกนเฉพาะไฟล์ที่ staged ไว้ ไม่ใช่ทั้งโปรเจกต์ จึงเร็วพอจะอยู่ในขั้นตอน commit ได้
+    ผลลัพธ์แสดงเฉพาะค่าที่ปิดบังแล้ว ไม่มีค่าจริงหลุดลง terminal หรือ log
+  entry: arak scan
+  language: node
+  types_or: [ts, tsx, javascript, jsx, json, yaml, markdown, sql, csv, text]
+  pass_filenames: true
+
+- id: arak-catalog-in-sync
+  name: arak sync --check — แคตตาล็อกต้องตรงกับสคีมา
+  description: >-
+    กันไม่ให้สคีมากับ pii-catalog.yaml เดินคนละทาง
+    ถ้าไม่ตรงจะบอกให้รัน arak sync แล้ว commit ผลลัพธ์ตามไปด้วย
+  entry: arak sync --check
+  language: node
+  files: \.prisma$|pii-catalog\.yaml$
+  pass_filenames: false

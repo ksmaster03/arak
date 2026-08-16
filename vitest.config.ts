@@ -10,6 +10,7 @@ export default defineConfig({
     alias: {
       "@arak/core": src("core"),
       "@arak/prisma": src("prisma"),
+      "@arak/detect-th": src("detect-th"),
     },
   },
   test: {

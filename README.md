@@ -107,6 +107,9 @@ node packages/cli/dist/index.js sync      # read the schema, reconcile the catal
 node packages/cli/dist/index.js baseline  # park what already exists as acknowledged debt
 node packages/cli/dist/index.js status    # the CI gate
 node packages/cli/dist/index.js scan      # find real personal data in files
+node packages/cli/dist/index.js ropa      # the section 39 record, as .xlsx
+node packages/cli/dist/index.js semgrep   # Semgrep rules grown from the catalog
+node packages/cli/dist/index.js export --format fideslang
 ```
 
 `packages/plugin/bin/arak.mjs` is the same program bundled with zero dependencies. It runs from a
@@ -281,6 +284,46 @@ data with no purpose attached, which section 39(2) does not allow.
 `--strict` makes acknowledged debt fail too, for the day the team is ready to clear it.
 `sync --check` demands that the committed catalog always match the schema.
 
+An exit code is only visible to whoever has a terminal open. `--format sarif` puts the same
+finding on the line that caused it, inside the pull request, where the decision to merge is
+actually being made.
+
+```yaml
+- id: arak
+  uses: ksmaster03/arak@v0.1.0
+  with: { command: status }
+
+- if: always()          # without this, a failing gate uploads nothing
+  uses: github/codeql-action/upload-sarif@v3
+  with: { sarif_file: '${{ steps.arak.outputs.sarif-file }}' }
+```
+
+There are also three `pre-commit` hooks, so the question gets asked before the code leaves the
+machine. Both are set out in [docs/ci.md](docs/ci.md). The action runs the dependency-free bundle
+committed in this repository, so nothing is installed or built while your pipeline is running.
+
+---
+
+## What the catalog turns into
+
+The catalog is worth more than a passing build. Three things grow out of it, none of which invent
+anything the catalog does not already hold.
+
+| Command | What comes out |
+|---|---|
+| `arak ropa` | The section 39 record as `.xlsx` — one sheet for the controller, one row per processing activity, one row per field |
+| `arak semgrep` | Taint rules whose sources are your marked fields and whose sinks are logs, responses and third parties |
+| `arak export --format fideslang` | The catalog in [Fideslang](https://github.com/ethyca/fideslang), so it can be read by Fides, DataHub and OpenMetadata |
+
+`arak ropa` still writes the file when fields remain undecided, and files them under a heading
+that says so, but it exits `1`. A draft that admits where it is unfinished is more useful than
+nothing and far safer than a record that looks complete and is not.
+
+The Fideslang mapping is honest about the joins that do not line up. Fideslang was written around
+GDPR and Arak's categories around section 26, so trade union membership has nowhere to go and
+sexual orientation is not sexual behaviour. Every inexact mapping carries its reason and is
+reported on export rather than quietly rounded off.
+
 ---
 
 ## Where it stands
@@ -289,14 +332,20 @@ TypeScript and Prisma are the first supported stack.
 
 | Standing | Not yet built |
 |---|---|
-| Catalog covering all of section 39 | RoPA document generator (.docx/.xlsx) |
-| Prisma reader with `@pii` annotations | Semgrep rules that stop PII reaching logs |
-| Catalog writes that preserve your comments | MCP server for redacted file reads |
-| 39 field-name heuristics | OpenAPI and TypeScript type readers |
+| Catalog covering all of section 39 | Readers beyond Prisma — SQL DDL, Drizzle, TypeORM |
+| Prisma reader with `@pii` annotations | Introspecting a live database, where columns outlive the schema |
+| Catalog writes that preserve your comments | Real data-flow analysis rather than name matching |
+| 39 field-name heuristics | MCP server for redacted file reads |
 | 12 Thai value detectors | Thai names without an honorific |
 | Deterministic, reversible redactor | npm and a public marketplace listing |
 | Three Claude Code hooks, plus baselining | |
 | `init` · `sync` · `baseline` · `status` · `scan` | |
+| `ropa` · `semgrep` · `export` | |
+| SARIF output, a GitHub Action and `pre-commit` hooks | |
+
+[docs/landscape.md](docs/landscape.md) sets Arak against the tools that solve neighbouring
+problems — Fides, Bearer, Privado, Presidio, gitleaks — and records which of their ideas were
+taken, which were left, and why.
 
 The field-name guesser reads names and types, nothing more. It exists so there is something to
 decide on day one. Every rule in it was cut against four production schemas, a warehouse system, a

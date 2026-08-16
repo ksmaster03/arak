@@ -1,0 +1,112 @@
+name: "Arak — ด่านข้อมูลส่วนบุคคลตาม PDPA"
+description: >-
+  ตรวจว่าฟิลด์ข้อมูลส่วนบุคคลที่เขียนใหม่ถูกตัดสินแล้ว และไม่มีข้อมูลจริงค้างอยู่ในไฟล์
+  ออกผลเป็น SARIF เพื่อให้ไปโผล่เป็นคอมเมนต์ในบรรทัดที่มีปัญหาใน pull request
+author: "Toptier Innovation"
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  command:
+    description: "status (ตรวจว่าฟิลด์ถูกตัดสินครบ) หรือ scan (หาข้อมูลจริงในไฟล์)"
+    required: false
+    default: status
+  root:
+    description: "รากโปรเจกต์ที่มี arak.config.yaml"
+    required: false
+    default: "."
+  paths:
+    description: "เฉพาะคำสั่ง scan — พาธหรือ glob คั่นด้วยช่องว่าง ไม่ใส่คือทั้งโปรเจกต์"
+    required: false
+    default: ""
+  sarif-file:
+    description: "ไฟล์ SARIF ที่จะเขียนออกมา"
+    required: false
+    default: arak.sarif
+  strict:
+    description: "เฉพาะคำสั่ง status — ให้หนี้เก่าทำให้ตกด้วย"
+    required: false
+    default: "false"
+  min-confidence:
+    description: "เฉพาะคำสั่ง scan — เกณฑ์ความเชื่อมั่น 0 ถึง 1"
+    required: false
+    default: "0.7"
+  fail:
+    description: >-
+      ให้ผลที่ไม่ผ่านทำให้ step แดง ตั้งเป็น false ถ้าอยากอัป SARIF อย่างเดียว
+      โดยไม่ให้ job ตก
+    required: false
+    default: "true"
+
+outputs:
+  sarif-file:
+    description: "พาธของไฟล์ SARIF ที่เขียนออกมา"
+    value: ${{ steps.arak.outputs.sarif-file }}
+  exit-code:
+    description: "รหัสจบของ arak — 0 ผ่าน · 1 ยังไม่ผ่าน · 2 เรียกใช้ผิด"
+    value: ${{ steps.arak.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - id: arak
+      shell: bash
+      env:
+        ARAK_COMMAND: ${{ inputs.command }}
+        ARAK_ROOT: ${{ inputs.root }}
+        ARAK_PATHS: ${{ inputs.paths }}
+        ARAK_SARIF: ${{ inputs.sarif-file }}
+        ARAK_STRICT: ${{ inputs.strict }}
+        ARAK_MIN_CONFIDENCE: ${{ inputs.min-confidence }}
+        ARAK_FAIL: ${{ inputs.fail }}
+        ARAK_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+
+        # ใช้ bundle ที่ไม่มี dependency และถูก commit ไว้ในรีโปนี้แล้ว
+        # จึงไม่ต้อง npm install ไม่ต้อง build และไม่มี supply chain เพิ่มเข้ามาระหว่างรัน
+        ARAK="$ARAK_ACTION_PATH/packages/plugin/bin/arak.mjs"
+        if [ ! -f "$ARAK" ]; then
+          echo "::error::ไม่พบ $ARAK — เช็คว่า checkout ตัว action มาครบหรือยัง"
+          exit 2
+        fi
+
+        case "$ARAK_COMMAND" in
+          status|scan) ;;
+          *) echo "::error::command ต้องเป็น status หรือ scan ไม่ใช่ '$ARAK_COMMAND'"; exit 2 ;;
+        esac
+
+        args=(--root "$ARAK_ROOT" --format sarif --out "$ARAK_SARIF")
+        if [ "$ARAK_COMMAND" = "status" ] && [ "$ARAK_STRICT" = "true" ]; then
+          args+=(--strict)
+        fi
+        if [ "$ARAK_COMMAND" = "scan" ]; then
+          args+=(--min-confidence "$ARAK_MIN_CONFIDENCE")
+          if [ -n "$ARAK_PATHS" ]; then
+            read -r -a extra <<< "$ARAK_PATHS"
+            args+=("${extra[@]}")
+          fi
+        fi
+
+        set +e
+        node "$ARAK" "$ARAK_COMMAND" "${args[@]}"
+        code=$?
+        set -e
+
+        {
+          echo "exit-code=$code"
+          echo "sarif-file=$ARAK_SARIF"
+        } >> "$GITHUB_OUTPUT"
+
+        case "$code" in
+          0) echo "::notice::Arak ผ่าน" ;;
+          1) echo "::warning::Arak ยังไม่ผ่าน — ดูรายละเอียดในแท็บ Security หลัง SARIF ถูกอัป" ;;
+          *) echo "::error::Arak เรียกใช้ไม่สำเร็จ (รหัส $code)" ;;
+        esac
+
+        # ยังต้องเขียนไฟล์ SARIF ให้ได้เสมอ ขั้นอัปโหลดของผู้เรียกจะได้ทำงานต่อด้วย if: always()
+        if [ "$ARAK_FAIL" = "true" ] && [ "$code" -ne 0 ]; then
+          exit "$code"
+        fi

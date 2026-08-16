@@ -8,6 +8,11 @@
   "engines": {
     "node": ">=20"
   },
+  "//bin": "ชี้ไปที่ bundle ที่ไม่มี dependency และถูก commit ไว้แล้ว จึงติดตั้งจาก git ได้ตรง ๆ โดยไม่ต้อง build — pre-commit และ npx อาศัยข้อนี้",
+  "bin": {
+    "arak": "packages/plugin/bin/arak.mjs"
+  },
+  "files": ["packages/plugin/bin"],
   "scripts": {
     "build": "pnpm -r run build",
     "test": "vitest run",

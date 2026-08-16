@@ -979,12 +979,12 @@ var require_stringifyComment = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
     "use strict";
     var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
-    function indentComment(comment, indent) {
+    function indentComment(comment, indent2) {
       if (/^\n+$/.test(comment))
         return comment.substring(1);
-      return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
+      return indent2 ? comment.replace(/^(?! *$)/gm, indent2) : comment;
     }
-    var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
+    var lineComment = (str, indent2, comment) => str.endsWith("\n") ? indentComment(comment, indent2) : comment.includes("\n") ? "\n" + indentComment(comment, indent2) : (str.endsWith(" ") ? "" : " ") + comment;
     exports.indentComment = indentComment;
     exports.lineComment = lineComment;
     exports.stringifyComment = stringifyComment;
@@ -998,17 +998,17 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text, indent2, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
         return text;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
-      const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
+      const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent2.length);
       if (text.length <= endStep)
         return text;
       const folds = [];
       const escapedFolds = {};
-      let end = lineWidth - indent.length;
+      let end = lineWidth - indent2.length;
       if (typeof indentAtStart === "number") {
         if (indentAtStart > lineWidth - Math.max(2, minContentWidth))
           folds.push(0);
@@ -1022,7 +1022,7 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
+        i = consumeMoreIndentedLines(text, i, indent2.length);
         if (i !== -1)
           end = i + endStep;
       }
@@ -1046,8 +1046,8 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
-          end = i + indent.length + endStep;
+            i = consumeMoreIndentedLines(text, i, indent2.length);
+          end = i + indent2.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
@@ -1092,22 +1092,22 @@ var require_foldFlowLines = __commonJS({
         const end2 = folds[i2 + 1] || text.length;
         if (fold === 0)
           res = `
-${indent}${text.slice(0, end2)}`;
+${indent2}${text.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
             res += `${text[fold]}\\`;
           res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent2}${text.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text, i, indent) {
+    function consumeMoreIndentedLines(text, i, indent2) {
       let end = i;
       let start = i + 1;
       let ch = text[start];
       while (ch === " " || ch === "	") {
-        if (i < start + indent) {
+        if (i < start + indent2) {
           ch = text[++i];
         } else {
           do {
@@ -1163,7 +1163,7 @@ var require_stringifyString = __commonJS({
         return json;
       const { implicitKey } = ctx;
       const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
-      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
+      const indent2 = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
       let str = "";
       let start = 0;
       for (let i = 0, ch = json[i]; ch; ch = json[++i]) {
@@ -1223,7 +1223,7 @@ var require_stringifyString = __commonJS({
                   str += "\n";
                   i += 2;
                 }
-                str += indent;
+                str += indent2;
                 if (json[i + 2] === " ")
                   str += "\\";
                 i += 1;
@@ -1235,15 +1235,15 @@ var require_stringifyString = __commonJS({
           }
       }
       str = start ? str + json.slice(start) : json;
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
+      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent2, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
     }
     function singleQuotedString(value, ctx) {
       if (ctx.options.singleQuote === false || ctx.implicitKey && value.includes("\n") || /[ \t]\n|\n[ \t]/.test(value))
         return doubleQuotedString(value, ctx);
-      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
+      const indent2 = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
       const res = "'" + value.replace(/'/g, "''").replace(/\n+/g, `$&
-${indent}`) + "'";
-      return ctx.implicitKey ? res : foldFlowLines.foldFlowLines(res, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+${indent2}`) + "'";
+      return ctx.implicitKey ? res : foldFlowLines.foldFlowLines(res, indent2, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
     }
     function quotedString(value, ctx) {
       const { singleQuote } = ctx.options;
@@ -1273,8 +1273,8 @@ ${indent}`) + "'";
       if (!blockQuote || /\n[\t ]+$/.test(value)) {
         return quotedString(value, ctx);
       }
-      const indent = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value) ? "  " : "");
-      const literal = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value, lineWidth, indent.length);
+      const indent2 = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value) ? "  " : "");
+      const literal = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value, lineWidth, indent2.length);
       if (!value)
         return literal ? "|\n" : ">\n";
       let chomp;
@@ -1299,7 +1299,7 @@ ${indent}`) + "'";
         value = value.slice(0, -end.length);
         if (end[end.length - 1] === "\n")
           end = end.slice(0, -1);
-        end = end.replace(blockEndNewlines, `$&${indent}`);
+        end = end.replace(blockEndNewlines, `$&${indent2}`);
       }
       let startWithSpace = false;
       let startEnd;
@@ -1316,9 +1316,9 @@ ${indent}`) + "'";
       let start = value.substring(0, startNlPos < startEnd ? startNlPos + 1 : startEnd);
       if (start) {
         value = value.substring(start.length);
-        start = start.replace(/\n+/g, `$&${indent}`);
+        start = start.replace(/\n+/g, `$&${indent2}`);
       }
-      const indentSize = indent ? "2" : "1";
+      const indentSize = indent2 ? "2" : "1";
       let header = (startWithSpace ? indentSize : "") + chomp;
       if (comment) {
         header += " " + commentString(comment.replace(/ ?[\r\n]+/g, " "));
@@ -1326,7 +1326,7 @@ ${indent}`) + "'";
           onComment();
       }
       if (!literal) {
-        const foldedValue = value.replace(/\n+/g, "\n$&").replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, "$1$2").replace(/\n+/g, `$&${indent}`);
+        const foldedValue = value.replace(/\n+/g, "\n$&").replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, "$1$2").replace(/\n+/g, `$&${indent2}`);
         let literalFallback = false;
         const foldOptions = getFoldOptions(ctx, true);
         if (blockQuote !== "folded" && type !== Scalar.Scalar.BLOCK_FOLDED) {
@@ -1334,18 +1334,18 @@ ${indent}`) + "'";
             literalFallback = true;
           };
         }
-        const body = foldFlowLines.foldFlowLines(`${start}${foldedValue}${end}`, indent, foldFlowLines.FOLD_BLOCK, foldOptions);
+        const body = foldFlowLines.foldFlowLines(`${start}${foldedValue}${end}`, indent2, foldFlowLines.FOLD_BLOCK, foldOptions);
         if (!literalFallback)
           return `>${header}
-${indent}${body}`;
+${indent2}${body}`;
       }
-      value = value.replace(/\n+/g, `$&${indent}`);
+      value = value.replace(/\n+/g, `$&${indent2}`);
       return `|${header}
-${indent}${start}${value}${end}`;
+${indent2}${start}${value}${end}`;
     }
     function plainString(item, ctx, onComment, onChompKeep) {
       const { type, value } = item;
-      const { actualString, implicitKey, indent, indentStep, inFlow } = ctx;
+      const { actualString, implicitKey, indent: indent2, indentStep, inFlow } = ctx;
       if (implicitKey && value.includes("\n") || inFlow && /[[\]{},]/.test(value)) {
         return quotedString(value, ctx);
       }
@@ -1356,22 +1356,22 @@ ${indent}${start}${value}${end}`;
         return blockString(item, ctx, onComment, onChompKeep);
       }
       if (containsDocumentMarker(value)) {
-        if (indent === "") {
+        if (indent2 === "") {
           ctx.forceBlockIndent = true;
           return blockString(item, ctx, onComment, onChompKeep);
-        } else if (implicitKey && indent === indentStep) {
+        } else if (implicitKey && indent2 === indentStep) {
           return quotedString(value, ctx);
         }
       }
       const str = value.replace(/\n+/g, `$&
-${indent}`);
+${indent2}`);
       if (actualString) {
         const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
         const { compat, tags } = ctx.doc.schema;
         if (tags.some(test) || compat?.some(test))
           return quotedString(value, ctx);
       }
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent2, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
     }
     function stringifyString(item, ctx, onComment, onChompKeep) {
       const { implicitKey, inFlow } = ctx;
@@ -1501,7 +1501,7 @@ var require_stringify = __commonJS({
         props.push(doc.directives.tagString(tag));
       return props.join(" ");
     }
-    function stringify(item, ctx, onComment, onChompKeep) {
+    function stringify2(item, ctx, onComment, onChompKeep) {
       if (identity.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
       if (identity.isAlias(item)) {
@@ -1530,7 +1530,7 @@ var require_stringify = __commonJS({
 ${ctx.indent}${str}`;
     }
     exports.createStringifyContext = createStringifyContext;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -1540,10 +1540,10 @@ var require_stringifyPair = __commonJS({
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
-      const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
+      const { allNullValues, doc, indent: indent2, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
       let keyComment = identity.isNode(key) && key.comment || null;
       if (simpleKeys) {
         if (keyComment) {
@@ -1558,11 +1558,11 @@ var require_stringifyPair = __commonJS({
       ctx = Object.assign({}, ctx, {
         allNullValues: false,
         implicitKey: !explicitKey && (simpleKeys || !allNullValues),
-        indent: indent + indentStep
+        indent: indent2 + indentStep
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      let str = stringify2.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
       if (!explicitKey && !ctx.inFlow && str.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
@@ -1588,7 +1588,7 @@ var require_stringifyPair = __commonJS({
         if (keyComment)
           str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
         str = `? ${str}
-${indent}:`;
+${indent2}:`;
       } else {
         str = `${str}:`;
         if (keyComment)
@@ -1614,7 +1614,7 @@ ${indent}:`;
         ctx.indent = ctx.indent.substring(2);
       }
       let valueCommentDone = false;
-      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
+      const valueStr = stringify2.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
       let ws = " ";
       if (keyComment || vsb || vcb) {
         ws = vsb ? "\n" : "";
@@ -1755,7 +1755,7 @@ var require_addPairToJSMap = __commonJS({
     "use strict";
     var log = require_log();
     var merge = require_merge();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var identity = require_identity();
     var toJS = require_toJS();
     function addPairToJSMap(ctx, map, { key, value }) {
@@ -1791,7 +1791,7 @@ var require_addPairToJSMap = __commonJS({
       if (typeof jsKey !== "object")
         return String(jsKey);
       if (identity.isNode(key) && ctx?.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        const strCtx = stringify2.createStringifyContext(ctx.doc, {});
         strCtx.anchors = /* @__PURE__ */ new Set();
         for (const node of ctx.anchors.keys())
           strCtx.anchors.add(node.anchor);
@@ -1858,15 +1858,15 @@ var require_stringifyCollection = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyCollection(collection, ctx, options) {
       const flow = ctx.inFlow ?? collection.flow;
-      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-      return stringify2(collection, ctx, options);
+      const stringify3 = flow ? stringifyFlowCollection : stringifyBlockCollection;
+      return stringify3(collection, ctx, options);
     }
     function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
-      const { indent, options: { commentString } } = ctx;
+      const { indent: indent2, options: { commentString } } = ctx;
       const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
       let chompKeep = false;
       const lines = [];
@@ -1888,7 +1888,7 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str2 = stringify2.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
           str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
@@ -1903,11 +1903,11 @@ var require_stringifyCollection = __commonJS({
         for (let i = 1; i < lines.length; ++i) {
           const line = lines[i];
           str += line ? `
-${indent}${line}` : "\n";
+${indent2}${line}` : "\n";
         }
       }
       if (comment) {
-        str += "\n" + stringifyComment.indentComment(commentString(comment), indent);
+        str += "\n" + stringifyComment.indentComment(commentString(comment), indent2);
         if (onComment)
           onComment();
       } else if (chompKeep && onChompKeep)
@@ -1915,7 +1915,7 @@ ${indent}${line}` : "\n";
       return str;
     }
     function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
-      const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
+      const { indent: indent2, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
       itemIndent += indentStep;
       const itemCtx = Object.assign({}, ctx, {
         indent: itemIndent,
@@ -1955,7 +1955,7 @@ ${indent}${line}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str = stringify.stringify(item, itemCtx, () => comment = null);
+        let str = stringify2.stringify(item, itemCtx, () => comment = null);
         reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
         if (i < items.length - 1) {
           str += ",";
@@ -1984,19 +1984,19 @@ ${indent}${line}` : "\n";
           let str = start;
           for (const line of lines)
             str += line ? `
-${indentStep}${indent}${line}` : "\n";
+${indentStep}${indent2}${line}` : "\n";
           return `${str}
-${indent}${end}`;
+${indent2}${end}`;
         } else {
           return `${start}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
         }
       }
     }
-    function addCommentBefore({ indent, options: { commentString } }, lines, comment, chompKeep) {
+    function addCommentBefore({ indent: indent2, options: { commentString } }, lines, comment, chompKeep) {
       if (comment && chompKeep)
         comment = comment.replace(/^\n+/, "");
       if (comment) {
-        const ic = stringifyComment.indentComment(commentString(comment), indent);
+        const ic = stringifyComment.indentComment(commentString(comment), indent2);
         lines.push(ic.trimStart());
       }
     }
@@ -3316,7 +3316,7 @@ var require_stringifyDocument = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
       const lines = [];
@@ -3331,7 +3331,7 @@ var require_stringifyDocument = __commonJS({
       }
       if (hasDirectives)
         lines.push("---");
-      const ctx = stringify.createStringifyContext(doc, options);
+      const ctx = stringify2.createStringifyContext(doc, options);
       const { commentString } = ctx.options;
       if (doc.commentBefore) {
         if (lines.length !== 1)
@@ -3353,7 +3353,7 @@ var require_stringifyDocument = __commonJS({
           contentComment = doc.contents.comment;
         }
         const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
-        let body = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
+        let body = stringify2.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
         if (contentComment)
           body += stringifyComment.lineComment(body, "", commentString(contentComment));
         if ((body[0] === "|" || body[0] === ">") && lines[lines.length - 1] === "---") {
@@ -3361,7 +3361,7 @@ var require_stringifyDocument = __commonJS({
         } else
           lines.push(body);
       } else {
-        lines.push(stringify.stringify(doc.contents, ctx));
+        lines.push(stringify2.stringify(doc.contents, ctx));
       }
       if (doc.directives?.docEnd) {
         if (doc.comment) {
@@ -3946,10 +3946,10 @@ var require_util_flow_indent_check = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
     "use strict";
     var utilContainsNewline = require_util_contains_newline();
-    function flowIndentCheck(indent, fc, onError) {
+    function flowIndentCheck(indent2, fc, onError) {
       if (fc?.type === "flow-collection") {
         const end = fc.end[0];
-        if (end.indent === indent && (end.source === "]" || end.source === "}") && utilContainsNewline.containsNewline(fc)) {
+        if (end.indent === indent2 && (end.source === "]" || end.source === "}") && utilContainsNewline.containsNewline(fc)) {
           const msg = "Flow end indicator should be more indented than parent";
           onError(end, "BAD_INDENT", msg, true);
         }
@@ -4467,17 +4467,17 @@ var require_resolve_block_scalar = __commonJS({
       let offset = scalar.offset + header.length;
       let contentStart = 0;
       for (let i = 0; i < chompStart; ++i) {
-        const [indent, content] = lines[i];
+        const [indent2, content] = lines[i];
         if (content === "" || content === "\r") {
-          if (header.indent === 0 && indent.length > trimIndent)
-            trimIndent = indent.length;
+          if (header.indent === 0 && indent2.length > trimIndent)
+            trimIndent = indent2.length;
         } else {
-          if (indent.length < trimIndent) {
+          if (indent2.length < trimIndent) {
             const message = "Block scalars with more-indented leading empty lines must use an explicit indentation indicator";
-            onError(offset + indent.length, "MISSING_CHAR", message);
+            onError(offset + indent2.length, "MISSING_CHAR", message);
           }
           if (header.indent === 0)
-            trimIndent = indent.length;
+            trimIndent = indent2.length;
           contentStart = i;
           if (trimIndent === 0 && !ctx.atRoot) {
             const message = "Block scalar values in collections must be indented";
@@ -4485,7 +4485,7 @@ var require_resolve_block_scalar = __commonJS({
           }
           break;
         }
-        offset += indent.length + content.length + 1;
+        offset += indent2.length + content.length + 1;
       }
       for (let i = lines.length - 1; i >= chompStart; --i) {
         if (lines[i][0].length > trimIndent)
@@ -4497,26 +4497,26 @@ var require_resolve_block_scalar = __commonJS({
       for (let i = 0; i < contentStart; ++i)
         value += lines[i][0].slice(trimIndent) + "\n";
       for (let i = contentStart; i < chompStart; ++i) {
-        let [indent, content] = lines[i];
-        offset += indent.length + content.length + 1;
+        let [indent2, content] = lines[i];
+        offset += indent2.length + content.length + 1;
         const crlf = content[content.length - 1] === "\r";
         if (crlf)
           content = content.slice(0, -1);
-        if (content && indent.length < trimIndent) {
+        if (content && indent2.length < trimIndent) {
           const src = header.indent ? "explicit indentation indicator" : "first line";
           const message = `Block scalar lines must not be less indented than their ${src}`;
           onError(offset - content.length - (crlf ? 2 : 1), "BAD_INDENT", message);
-          indent = "";
+          indent2 = "";
         }
         if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value += sep3 + indent.slice(trimIndent) + content;
+          value += sep3 + indent2.slice(trimIndent) + content;
           sep3 = "\n";
-        } else if (indent.length > trimIndent || content[0] === "	") {
+        } else if (indent2.length > trimIndent || content[0] === "	") {
           if (sep3 === " ")
             sep3 = "\n";
           else if (!prevMoreIndented && sep3 === "\n")
             sep3 = "\n\n";
-          value += sep3 + indent.slice(trimIndent) + content;
+          value += sep3 + indent2.slice(trimIndent) + content;
           sep3 = "\n";
           prevMoreIndented = true;
         } else if (content === "") {
@@ -4552,7 +4552,7 @@ var require_resolve_block_scalar = __commonJS({
       }
       const { source } = props[0];
       const mode = source[0];
-      let indent = 0;
+      let indent2 = 0;
       let chomp = "";
       let error = -1;
       for (let i = 1; i < source.length; ++i) {
@@ -4561,8 +4561,8 @@ var require_resolve_block_scalar = __commonJS({
           chomp = ch;
         else {
           const n = Number(ch);
-          if (!indent && n)
-            indent = n;
+          if (!indent2 && n)
+            indent2 = n;
           else if (error === -1)
             error = offset + i;
         }
@@ -4603,7 +4603,7 @@ var require_resolve_block_scalar = __commonJS({
           }
         }
       }
-      return { mode, indent, chomp, comment, length };
+      return { mode, indent: indent2, chomp, comment, length };
     }
     function splitLines(source) {
       const split = source.split(/\n( *)/);
@@ -5336,15 +5336,15 @@ var require_cst_scalar = __commonJS({
       return null;
     }
     function createScalarToken(value, context) {
-      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context;
+      const { implicitKey = false, indent: indent2, inFlow = false, offset = -1, type = "PLAIN" } = context;
       const source = stringifyString.stringifyString({ type, value }, {
         implicitKey,
-        indent: indent > 0 ? " ".repeat(indent) : "",
+        indent: indent2 > 0 ? " ".repeat(indent2) : "",
         inFlow,
         options: { blockQuote: true, lineWidth: -1 }
       });
       const end = context.end ?? [
-        { type: "newline", offset: -1, indent, source: "\n" }
+        { type: "newline", offset: -1, indent: indent2, source: "\n" }
       ];
       switch (source[0]) {
         case "|":
@@ -5353,25 +5353,25 @@ var require_cst_scalar = __commonJS({
           const head = source.substring(0, he);
           const body = source.substring(he + 1) + "\n";
           const props = [
-            { type: "block-scalar-header", offset, indent, source: head }
+            { type: "block-scalar-header", offset, indent: indent2, source: head }
           ];
           if (!addEndtoBlockProps(props, end))
-            props.push({ type: "newline", offset: -1, indent, source: "\n" });
-          return { type: "block-scalar", offset, indent, props, source: body };
+            props.push({ type: "newline", offset: -1, indent: indent2, source: "\n" });
+          return { type: "block-scalar", offset, indent: indent2, props, source: body };
         }
         case '"':
-          return { type: "double-quoted-scalar", offset, indent, source, end };
+          return { type: "double-quoted-scalar", offset, indent: indent2, source, end };
         case "'":
-          return { type: "single-quoted-scalar", offset, indent, source, end };
+          return { type: "single-quoted-scalar", offset, indent: indent2, source, end };
         default:
-          return { type: "scalar", offset, indent, source, end };
+          return { type: "scalar", offset, indent: indent2, source, end };
       }
     }
     function setScalarValue(token, value, context = {}) {
       let { afterKey = false, implicitKey = false, inFlow = false, type } = context;
-      let indent = "indent" in token ? token.indent : null;
-      if (afterKey && typeof indent === "number")
-        indent += 2;
+      let indent2 = "indent" in token ? token.indent : null;
+      if (afterKey && typeof indent2 === "number")
+        indent2 += 2;
       if (!type)
         switch (token.type) {
           case "single-quoted-scalar":
@@ -5391,8 +5391,8 @@ var require_cst_scalar = __commonJS({
             type = "PLAIN";
         }
       const source = stringifyString.stringifyString({ type, value }, {
-        implicitKey: implicitKey || indent === null,
-        indent: indent !== null && indent > 0 ? " ".repeat(indent) : "",
+        implicitKey: implicitKey || indent2 === null,
+        indent: indent2 !== null && indent2 > 0 ? " ".repeat(indent2) : "",
         inFlow,
         options: { blockQuote: true, lineWidth: -1 }
       });
@@ -5423,16 +5423,16 @@ var require_cst_scalar = __commonJS({
         token.source = body;
       } else {
         const { offset } = token;
-        const indent = "indent" in token ? token.indent : -1;
+        const indent2 = "indent" in token ? token.indent : -1;
         const props = [
-          { type: "block-scalar-header", offset, indent, source: head }
+          { type: "block-scalar-header", offset, indent: indent2, source: head }
         ];
         if (!addEndtoBlockProps(props, "end" in token ? token.end : void 0))
-          props.push({ type: "newline", offset: -1, indent, source: "\n" });
+          props.push({ type: "newline", offset: -1, indent: indent2, source: "\n" });
         for (const key of Object.keys(token))
           if (key !== "type" && key !== "offset")
             delete token[key];
-        Object.assign(token, { type: "block-scalar", indent, props, source: body });
+        Object.assign(token, { type: "block-scalar", indent: indent2, props, source: body });
       }
     }
     function addEndtoBlockProps(props, end) {
@@ -5477,12 +5477,12 @@ var require_cst_scalar = __commonJS({
           break;
         }
         default: {
-          const indent = "indent" in token ? token.indent : -1;
+          const indent2 = "indent" in token ? token.indent : -1;
           const end = "end" in token && Array.isArray(token.end) ? token.end.filter((st) => st.type === "space" || st.type === "comment" || st.type === "newline") : [];
           for (const key of Object.keys(token))
             if (key !== "type" && key !== "offset")
               delete token[key];
-          Object.assign(token, { type, indent, source, end });
+          Object.assign(token, { type, indent: indent2, source, end });
         }
       }
     }
@@ -5496,7 +5496,7 @@ var require_cst_scalar = __commonJS({
 var require_cst_stringify = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
-    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
+    var stringify2 = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
       switch (token.type) {
         case "block-scalar": {
@@ -5549,7 +5549,7 @@ var require_cst_stringify = __commonJS({
         res += stringifyToken(value);
       return res;
     }
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -5788,15 +5788,15 @@ var require_lexer = __commonJS({
       continueScalar(offset) {
         let ch = this.buffer[offset];
         if (this.indentNext > 0) {
-          let indent = 0;
+          let indent2 = 0;
           while (ch === " ")
-            ch = this.buffer[++indent + offset];
+            ch = this.buffer[++indent2 + offset];
           if (ch === "\r") {
-            const next = this.buffer[indent + offset + 1];
+            const next = this.buffer[indent2 + offset + 1];
             if (next === "\n" || !next && !this.atEnd)
-              return offset + indent + 1;
+              return offset + indent2 + 1;
           }
-          return ch === "\n" || indent >= this.indentNext || !ch && !this.atEnd ? offset + indent : -1;
+          return ch === "\n" || indent2 >= this.indentNext || !ch && !this.atEnd ? offset + indent2 : -1;
         }
         if (ch === "-" || ch === ".") {
           const dt = this.buffer.substr(offset, 3);
@@ -5965,12 +5965,12 @@ var require_lexer = __commonJS({
       }
       *parseFlowCollection() {
         let nl, sp;
-        let indent = -1;
+        let indent2 = -1;
         do {
           nl = yield* this.pushNewline();
           if (nl > 0) {
             sp = yield* this.pushSpaces(false);
-            this.indentValue = indent = sp;
+            this.indentValue = indent2 = sp;
           } else {
             sp = 0;
           }
@@ -5979,8 +5979,8 @@ var require_lexer = __commonJS({
         const line = this.getLine();
         if (line === null)
           return this.setNext("flow");
-        if (indent !== -1 && indent < this.indentNext && line[0] !== "#" || indent === 0 && (line.startsWith("---") || line.startsWith("...")) && isEmpty(line[3])) {
-          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line[0] === "]" || line[0] === "}");
+        if (indent2 !== -1 && indent2 < this.indentNext && line[0] !== "#" || indent2 === 0 && (line.startsWith("---") || line.startsWith("...")) && isEmpty(line[3])) {
+          const atFlowEndMarker = indent2 === this.indentNext - 1 && this.flowLevel === 1 && (line[0] === "]" || line[0] === "}");
           if (!atFlowEndMarker) {
             this.flowLevel = 0;
             yield cst.FLOW_END;
@@ -6088,16 +6088,16 @@ var require_lexer = __commonJS({
       }
       *parseBlockScalar() {
         let nl = this.pos - 1;
-        let indent = 0;
+        let indent2 = 0;
         let ch;
         loop: for (let i2 = this.pos; ch = this.buffer[i2]; ++i2) {
           switch (ch) {
             case " ":
-              indent += 1;
+              indent2 += 1;
               break;
             case "\n":
               nl = i2;
-              indent = 0;
+              indent2 = 0;
               break;
             case "\r": {
               const next = this.buffer[i2 + 1];
@@ -6113,9 +6113,9 @@ var require_lexer = __commonJS({
         }
         if (!ch && !this.atEnd)
           return this.setNext("block-scalar");
-        if (indent >= this.indentNext) {
+        if (indent2 >= this.indentNext) {
           if (this.blockScalarIndent === -1)
-            this.indentNext = indent;
+            this.indentNext = indent2;
           else {
             this.indentNext = this.blockScalarIndent + (this.indentNext === 0 ? 1 : this.indentNext);
           }
@@ -6148,7 +6148,7 @@ var require_lexer = __commonJS({
             const lastChar = i2;
             while (ch2 === " ")
               ch2 = this.buffer[--i2];
-            if (ch2 === "\n" && i2 >= this.pos && i2 + 1 + indent > lastChar)
+            if (ch2 === "\n" && i2 >= this.pos && i2 + 1 + indent2 > lastChar)
               nl = i2;
             else
               break;
@@ -6344,15 +6344,15 @@ var require_parser = __commonJS({
     var node_process = __require("process");
     var cst = require_cst();
     var lexer = require_lexer();
-    function includesToken(list, type) {
-      for (let i = 0; i < list.length; ++i)
-        if (list[i].type === type)
+    function includesToken(list2, type) {
+      for (let i = 0; i < list2.length; ++i)
+        if (list2[i].type === type)
           return true;
       return false;
     }
-    function findNonEmptyIndex(list) {
-      for (let i = 0; i < list.length; ++i) {
-        switch (list[i].type) {
+    function findNonEmptyIndex(list2) {
+      for (let i = 0; i < list2.length; ++i) {
+        switch (list2[i].type) {
           case "space":
           case "comment":
           case "newline":
@@ -7164,10 +7164,10 @@ var require_parser = __commonJS({
         }
         return null;
       }
-      atIndentedComment(start, indent) {
+      atIndentedComment(start, indent2) {
         if (this.type !== "comment")
           return false;
-        if (this.indent <= indent)
+        if (this.indent <= indent2)
           return false;
         return start.every((st) => st.type === "newline" || st.type === "space");
       }
@@ -7279,7 +7279,7 @@ var require_public_api = __commonJS({
       }
       return doc.toJS(Object.assign({ reviver: _reviver }, options));
     }
-    function stringify(value, replacer, options) {
+    function stringify2(value, replacer, options) {
       let _replacer = null;
       if (typeof replacer === "function" || Array.isArray(replacer)) {
         _replacer = replacer;
@@ -7289,8 +7289,8 @@ var require_public_api = __commonJS({
       if (typeof options === "string")
         options = options.length;
       if (typeof options === "number") {
-        const indent = Math.round(options);
-        options = indent < 1 ? void 0 : indent > 8 ? { indent: 8 } : { indent };
+        const indent2 = Math.round(options);
+        options = indent2 < 1 ? void 0 : indent2 > 8 ? { indent: 8 } : { indent: indent2 };
       }
       if (value === void 0) {
         const { keepUndefined } = options ?? replacer ?? {};
@@ -7304,7 +7304,7 @@ var require_public_api = __commonJS({
     exports.parse = parse;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument2;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -7374,6 +7374,15 @@ var LEGAL_BASES = [
   "legitimate_interest",
   "research_archive"
 ];
+var LEGAL_BASIS_LABELS = {
+  consent: "\u0E04\u0E27\u0E32\u0E21\u0E22\u0E34\u0E19\u0E22\u0E2D\u0E21 (\u0E21.19)",
+  contract: "\u0E08\u0E33\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E15\u0E32\u0E21\u0E2A\u0E31\u0E0D\u0E0D\u0E32 (\u0E21.24(3))",
+  legal_obligation: "\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E15\u0E32\u0E21\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22 (\u0E21.24(6))",
+  vital_interest: "\u0E1B\u0E49\u0E2D\u0E07\u0E01\u0E31\u0E19\u0E2D\u0E31\u0E19\u0E15\u0E23\u0E32\u0E22\u0E15\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15 \u0E23\u0E48\u0E32\u0E07\u0E01\u0E32\u0E22 \u0E2A\u0E38\u0E02\u0E20\u0E32\u0E1E (\u0E21.24(2))",
+  public_task: "\u0E20\u0E32\u0E23\u0E01\u0E34\u0E08\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E1B\u0E23\u0E30\u0E42\u0E22\u0E0A\u0E19\u0E4C\u0E2A\u0E32\u0E18\u0E32\u0E23\u0E13\u0E30 / \u0E43\u0E0A\u0E49\u0E2D\u0E33\u0E19\u0E32\u0E08\u0E23\u0E31\u0E10 (\u0E21.24(4))",
+  legitimate_interest: "\u0E1B\u0E23\u0E30\u0E42\u0E22\u0E0A\u0E19\u0E4C\u0E42\u0E14\u0E22\u0E0A\u0E2D\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22 (\u0E21.24(5))",
+  research_archive: "\u0E08\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38 / \u0E27\u0E34\u0E08\u0E31\u0E22 / \u0E2A\u0E16\u0E34\u0E15\u0E34 (\u0E21.24(1))"
+};
 var SENSITIVE_CATEGORIES = [
   "race_ethnicity",
   "political_opinion",
@@ -7401,6 +7410,31 @@ var GENERAL_CATEGORIES = [
   "vehicle",
   "credential"
 ];
+var CATEGORY_LABELS = {
+  identity: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E23\u0E30\u0E1A\u0E38\u0E15\u0E31\u0E27\u0E15\u0E19",
+  government_id: "\u0E40\u0E25\u0E02\u0E1B\u0E23\u0E30\u0E08\u0E33\u0E15\u0E31\u0E27\u0E17\u0E35\u0E48\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23\u0E2D\u0E2D\u0E01\u0E43\u0E2B\u0E49",
+  contact: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D",
+  financial: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E40\u0E07\u0E34\u0E19",
+  employment: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E08\u0E49\u0E32\u0E07\u0E07\u0E32\u0E19",
+  education: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E28\u0E36\u0E01\u0E29\u0E32",
+  location: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E33\u0E41\u0E2B\u0E19\u0E48\u0E07\u0E17\u0E35\u0E48\u0E2D\u0E22\u0E39\u0E48",
+  device: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E38\u0E1B\u0E01\u0E23\u0E13\u0E4C\u0E41\u0E25\u0E30\u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D",
+  behavioral: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E24\u0E15\u0E34\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19",
+  media: "\u0E20\u0E32\u0E1E \u0E40\u0E2A\u0E35\u0E22\u0E07 \u0E2B\u0E23\u0E37\u0E2D\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D",
+  family: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E2D\u0E1A\u0E04\u0E23\u0E31\u0E27",
+  vehicle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E22\u0E32\u0E19\u0E1E\u0E32\u0E2B\u0E19\u0E30",
+  credential: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E15\u0E31\u0E27\u0E15\u0E19\u0E41\u0E25\u0E30\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19",
+  race_ethnicity: "\u0E40\u0E0A\u0E37\u0E49\u0E2D\u0E0A\u0E32\u0E15\u0E34 \u0E40\u0E1C\u0E48\u0E32\u0E1E\u0E31\u0E19\u0E18\u0E38\u0E4C (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  political_opinion: "\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E40\u0E21\u0E37\u0E2D\u0E07 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  belief_religion: "\u0E04\u0E27\u0E32\u0E21\u0E40\u0E0A\u0E37\u0E48\u0E2D \u0E28\u0E32\u0E2A\u0E19\u0E32 \u0E1B\u0E23\u0E31\u0E0A\u0E0D\u0E32 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  sexual_behavior: "\u0E1E\u0E24\u0E15\u0E34\u0E01\u0E23\u0E23\u0E21\u0E17\u0E32\u0E07\u0E40\u0E1E\u0E28 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  criminal_record: "\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E2D\u0E32\u0E0A\u0E0D\u0E32\u0E01\u0E23\u0E23\u0E21 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  health: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E38\u0E02\u0E20\u0E32\u0E1E (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  disability: "\u0E04\u0E27\u0E32\u0E21\u0E1E\u0E34\u0E01\u0E32\u0E23 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  union: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E2B\u0E20\u0E32\u0E1E\u0E41\u0E23\u0E07\u0E07\u0E32\u0E19 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  genetic: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E31\u0E19\u0E18\u0E38\u0E01\u0E23\u0E23\u0E21 (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)",
+  biometric: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E0A\u0E35\u0E27\u0E20\u0E32\u0E1E (\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26)"
+};
 var SENSITIVE_SET = new Set(SENSITIVE_CATEGORIES);
 function isSensitiveCategory(category) {
   return category !== void 0 && SENSITIVE_SET.has(category);
@@ -8065,9 +8099,9 @@ function writeFields(doc, fields) {
     seq = new import_yaml.YAMLSeq();
     doc.set("fields", seq);
   }
-  const list = seq;
+  const list2 = seq;
   const nodeById = /* @__PURE__ */ new Map();
-  for (const item of list.items) {
+  for (const item of list2.items) {
     if (!(0, import_yaml.isMap)(item))
       continue;
     const id = item.get("id");
@@ -8081,7 +8115,7 @@ function writeFields(doc, fields) {
       continue;
     updateNode(doc, node, field);
   }
-  list.items = list.items.filter((item) => {
+  list2.items = list2.items.filter((item) => {
     if (!(0, import_yaml.isMap)(item))
       return true;
     const id = item.get("id");
@@ -8092,10 +8126,10 @@ function writeFields(doc, fields) {
       continue;
     const node = doc.createNode(compact(field));
     blockify(node);
-    list.items.push(node);
+    list2.items.push(node);
   }
-  if (list.items.length > 0)
-    list.flow = false;
+  if (list2.items.length > 0)
+    list2.flow = false;
 }
 function updateNode(doc, node, field) {
   const current = node.toJSON();
@@ -8167,8 +8201,169 @@ function starterCatalog(projectName) {
   };
 }
 
-// ../cli/src/config.ts
+// ../core/dist/fideslang.js
 var import_yaml2 = __toESM(require_dist(), 1);
+var FIDESLANG_CATEGORIES = {
+  // หมวดทั่วไป
+  identity: { fides: "user.name", exact: true },
+  government_id: { fides: "user.government_id", exact: true },
+  contact: { fides: "user.contact", exact: true },
+  financial: { fides: "user.financial", exact: true },
+  location: { fides: "user.location", exact: true },
+  device: { fides: "user.device", exact: true },
+  behavioral: { fides: "user.behavior", exact: true },
+  credential: { fides: "user.authorization.credentials", exact: true },
+  employment: {
+    fides: "user.workplace",
+    exact: false,
+    note: "user.workplace \u0E2B\u0E21\u0E32\u0E22\u0E16\u0E36\u0E07\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23\u0E17\u0E35\u0E48\u0E2A\u0E31\u0E07\u0E01\u0E31\u0E14 \u0E2A\u0E48\u0E27\u0E19 employment \u0E02\u0E2D\u0E07 Arak \u0E01\u0E27\u0E49\u0E32\u0E07\u0E01\u0E27\u0E48\u0E32 \u0E23\u0E27\u0E21\u0E40\u0E07\u0E34\u0E19\u0E40\u0E14\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E30\u0E2A\u0E31\u0E0D\u0E0D\u0E32\u0E08\u0E49\u0E32\u0E07\u0E14\u0E49\u0E27\u0E22"
+  },
+  media: {
+    fides: "user.content",
+    exact: false,
+    note: "user.content \u0E04\u0E23\u0E2D\u0E1A\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E2A\u0E23\u0E49\u0E32\u0E07 \u0E2A\u0E48\u0E27\u0E19 media \u0E02\u0E2D\u0E07 Arak \u0E2B\u0E21\u0E32\u0E22\u0E16\u0E36\u0E07\u0E20\u0E32\u0E1E \u0E40\u0E2A\u0E35\u0E22\u0E07 \u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D \u0E17\u0E35\u0E48\u0E23\u0E30\u0E1A\u0E38\u0E15\u0E31\u0E27\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E44\u0E14\u0E49"
+  },
+  vehicle: {
+    fides: "user.government_id.vehicle_registration",
+    exact: false,
+    note: "Fideslang \u0E21\u0E35\u0E41\u0E15\u0E48\u0E17\u0E30\u0E40\u0E1A\u0E35\u0E22\u0E19\u0E23\u0E16\u0E43\u0E19\u0E10\u0E32\u0E19\u0E30\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E22\u0E32\u0E19\u0E1E\u0E32\u0E2B\u0E19\u0E30\u0E42\u0E14\u0E22\u0E15\u0E23\u0E07"
+  },
+  education: {
+    fides: "user.demographic",
+    exact: false,
+    note: "Fideslang \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E01\u0E32\u0E23\u0E28\u0E36\u0E01\u0E29\u0E32 \u0E08\u0E36\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E22\u0E31\u0E14\u0E25\u0E07 user.demographic \u0E0B\u0E36\u0E48\u0E07\u0E01\u0E27\u0E49\u0E32\u0E07\u0E01\u0E27\u0E48\u0E32\u0E21\u0E32\u0E01"
+  },
+  family: {
+    fides: "user.demographic.marital_status",
+    exact: false,
+    note: "\u0E15\u0E23\u0E07\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E2A\u0E16\u0E32\u0E19\u0E20\u0E32\u0E1E\u0E2A\u0E21\u0E23\u0E2A \u0E2A\u0E48\u0E27\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E43\u0E19\u0E04\u0E23\u0E2D\u0E1A\u0E04\u0E23\u0E31\u0E27\u0E2D\u0E37\u0E48\u0E19 \u0E46 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E17\u0E35\u0E48\u0E25\u0E07\u0E43\u0E19 Fideslang"
+  },
+  // หมวดอ่อนไหวตามมาตรา 26
+  health: { fides: "user.health_and_medical", exact: true },
+  genetic: { fides: "user.health_and_medical.genetic", exact: true },
+  biometric: { fides: "user.biometric", exact: true },
+  criminal_record: { fides: "user.criminal_history", exact: true },
+  race_ethnicity: { fides: "user.demographic.race_ethnicity", exact: true },
+  political_opinion: { fides: "user.demographic.political_opinion", exact: true },
+  belief_religion: { fides: "user.demographic.religious_belief", exact: true },
+  sexual_behavior: {
+    fides: "user.demographic.sexual_orientation",
+    exact: false,
+    note: "\u0E23\u0E2A\u0E19\u0E34\u0E22\u0E21\u0E17\u0E32\u0E07\u0E40\u0E1E\u0E28\u0E01\u0E31\u0E1A\u0E1E\u0E24\u0E15\u0E34\u0E01\u0E23\u0E23\u0E21\u0E17\u0E32\u0E07\u0E40\u0E1E\u0E28\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E2A\u0E34\u0E48\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19 \u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E04\u0E38\u0E49\u0E21\u0E04\u0E23\u0E2D\u0E07\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E2B\u0E25\u0E31\u0E07 Fideslang \u0E21\u0E35\u0E41\u0E15\u0E48\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E41\u0E23\u0E01"
+  },
+  disability: {
+    fides: "user.health_and_medical",
+    exact: false,
+    note: "Fideslang \u0E44\u0E21\u0E48\u0E41\u0E22\u0E01\u0E04\u0E27\u0E32\u0E21\u0E1E\u0E34\u0E01\u0E32\u0E23\u0E2D\u0E2D\u0E01\u0E08\u0E32\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E38\u0E02\u0E20\u0E32\u0E1E \u0E41\u0E15\u0E48\u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E23\u0E30\u0E1A\u0E38\u0E44\u0E27\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E04\u0E19\u0E25\u0E30\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23"
+  },
+  union: {
+    fides: "user.demographic",
+    exact: false,
+    note: "Fideslang \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E20\u0E32\u0E1E\u0E2A\u0E2B\u0E20\u0E32\u0E1E\u0E41\u0E23\u0E07\u0E07\u0E32\u0E19\u0E40\u0E25\u0E22 \u0E17\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E17\u0E31\u0E49\u0E07\u0E43\u0E19 GDPR \u0E41\u0E25\u0E30\u0E21\u0E32\u0E15\u0E23\u0E32 26"
+  }
+};
+var FIDESLANG_LEGAL_BASIS = {
+  consent: { fides: "Consent", exact: true },
+  contract: { fides: "Contract", exact: true },
+  legal_obligation: { fides: "Legal obligations of the controller", exact: true },
+  vital_interest: { fides: "Vital interests of the data subject", exact: true },
+  public_task: { fides: "Public interest", exact: true },
+  legitimate_interest: { fides: "Legitimate interests", exact: true },
+  research_archive: {
+    fides: "Legitimate interests",
+    exact: false,
+    note: "\u0E21\u0E32\u0E15\u0E23\u0E32 24(1) \u0E43\u0E2B\u0E49\u0E08\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38 \u0E27\u0E34\u0E08\u0E31\u0E22 \u0E41\u0E25\u0E30\u0E2A\u0E16\u0E34\u0E15\u0E34 \u0E40\u0E1B\u0E47\u0E19\u0E10\u0E32\u0E19\u0E41\u0E22\u0E01\u0E15\u0E48\u0E32\u0E07\u0E2B\u0E32\u0E01 \u0E2A\u0E48\u0E27\u0E19 GDPR \u0E16\u0E37\u0E2D\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E20\u0E32\u0E22\u0E43\u0E15\u0E49\u0E10\u0E32\u0E19\u0E2D\u0E37\u0E48\u0E19"
+  }
+};
+function toFidesKey(value) {
+  const key = value.toLowerCase().replace(/[^a-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "");
+  return key === "" ? "arak_export" : key;
+}
+function exportFideslang(catalog, options) {
+  const systemKey = toFidesKey(options.systemName);
+  const approximations = /* @__PURE__ */ new Map();
+  const noteApproximation = (category) => {
+    const mapping = FIDESLANG_CATEGORIES[category];
+    if (mapping === void 0 || mapping.exact)
+      return;
+    approximations.set(category, {
+      category,
+      fides: mapping.fides,
+      note: mapping.note ?? ""
+    });
+  };
+  const collections = /* @__PURE__ */ new Map();
+  let undecided = 0;
+  for (const field of catalog.fields) {
+    if (field.status === "not-pii")
+      continue;
+    if (field.status !== "marked" || field.category === void 0) {
+      undecided += 1;
+      continue;
+    }
+    const mapping = FIDESLANG_CATEGORIES[field.category];
+    if (mapping === void 0)
+      continue;
+    noteApproximation(field.category);
+    const container = field.source.container;
+    let collection = collections.get(container);
+    if (collection === void 0) {
+      collection = { name: container, fields: [] };
+      collections.set(container, collection);
+    }
+    collection.fields.push({
+      name: field.source.field,
+      description: `${field.id} \u2014 \u0E08\u0E32\u0E01 ${field.source.file}:${field.source.line}`,
+      data_categories: [mapping.fides],
+      ...mapping.exact ? {} : { fides_meta: { arak_category: field.category, approximate: true } }
+    });
+  }
+  const dataset = {
+    fides_key: `${systemKey}_dataset`,
+    name: options.systemName,
+    description: "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E08\u0E32\u0E01 pii-catalog.yaml \u0E02\u0E2D\u0E07 Arak \u2014 \u0E2D\u0E22\u0E48\u0E32\u0E41\u0E01\u0E49\u0E44\u0E1F\u0E25\u0E4C\u0E19\u0E35\u0E49\u0E14\u0E49\u0E27\u0E22\u0E21\u0E37\u0E2D",
+    collections: [...collections.values()].sort((a, b) => a.name.localeCompare(b.name))
+  };
+  const declarations = catalog.purposes.map((purpose) => {
+    const fields = catalog.fields.filter((f) => f.status === "marked" && (f.purposes ?? []).includes(purpose.key));
+    const categories = [
+      ...new Set(fields.map((f) => FIDESLANG_CATEGORIES[f.category]?.fides).filter((c) => c !== void 0))
+    ].sort();
+    const basis = FIDESLANG_LEGAL_BASIS[purpose.legalBasis];
+    return {
+      name: purpose.label,
+      data_categories: categories,
+      // Fides บังคับให้มี data_use แต่ Arak ไม่เก็บ data use ตามอนุกรมวิธานของ Fideslang
+      // จะเดาให้ก็ผิดหลักของโครงการนี้ จึงใส่คีย์รากไว้ให้คนเลือกให้ละเอียดขึ้นเอง
+      data_use: "essential",
+      data_subjects: ["customer"],
+      legal_basis_for_processing: basis?.fides ?? "Legitimate interests",
+      retention_period: purpose.retention,
+      ...purpose.recipients === void 0 ? {} : { shared_with: purpose.recipients }
+    };
+  });
+  const system = {
+    fides_key: systemKey,
+    name: options.systemName,
+    system_type: "Application",
+    description: catalog.controller?.name ?? "",
+    ...catalog.controller?.contact === void 0 ? {} : { administrating_department: catalog.controller.contact },
+    privacy_declarations: declarations
+  };
+  const banner = "# \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E42\u0E14\u0E22 arak export --format fideslang \u2014 \u0E2D\u0E22\u0E48\u0E32\u0E41\u0E01\u0E49\u0E14\u0E49\u0E27\u0E22\u0E21\u0E37\u0E2D\n# \u0E41\u0E2B\u0E25\u0E48\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E04\u0E37\u0E2D pii-catalog.yaml \u0E41\u0E01\u0E49\u0E17\u0E35\u0E48\u0E19\u0E31\u0E48\u0E19\u0E41\u0E25\u0E49\u0E27\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E43\u0E2B\u0E21\u0E48\n#\n# data_use \u0E41\u0E25\u0E30 data_subjects \u0E22\u0E31\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E04\u0E48\u0E32\u0E15\u0E31\u0E49\u0E07\u0E15\u0E49\u0E19 \u0E40\u0E1E\u0E23\u0E32\u0E30 Arak \u0E44\u0E21\u0E48\u0E40\u0E01\u0E47\u0E1A\u0E2A\u0E2D\u0E07\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E35\u0E49\n# \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E04\u0E19\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E43\u0E2B\u0E49\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E02\u0E36\u0E49\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E40\u0E2D\u0E32\u0E44\u0E1B\u0E43\u0E0A\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E08\u0E23\u0E34\u0E07\n\n";
+  return {
+    yaml: banner + (0, import_yaml2.stringify)({ dataset: [dataset], system: [system] }, { lineWidth: 0 }),
+    approximations: [...approximations.values()].sort((a, b) => a.category.localeCompare(b.category)),
+    undecided
+  };
+}
+var ALL_CATEGORIES = [
+  ...GENERAL_CATEGORIES,
+  ...SENSITIVE_CATEGORIES
+];
+
+// ../cli/src/config.ts
+var import_yaml3 = __toESM(require_dist(), 1);
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 function globToRegExp(pattern) {
@@ -8234,7 +8429,7 @@ function loadConfig(root) {
   } catch {
     return defaultConfig(discoverPrismaSchemas(root));
   }
-  const raw = (0, import_yaml2.parse)(text);
+  const raw = (0, import_yaml3.parse)(text);
   const obj = raw ?? {};
   const sources = obj["sources"] ?? {};
   const prisma = Array.isArray(sources["prisma"]) ? sources["prisma"].map(String) : [];
@@ -8653,6 +8848,303 @@ function today() {
   return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 }
 
+// ../cli/src/ropa.ts
+var NOT_SET = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E23\u0E30\u0E1A\u0E38";
+var STATUS_LABELS = {
+  marked: "\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27",
+  unmarked: "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19",
+  deferred: "\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E17\u0E35\u0E48\u0E1E\u0E31\u0E01\u0E44\u0E27\u0E49",
+  "not-pii": "\u0E23\u0E30\u0E1A\u0E38\u0E27\u0E48\u0E32\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25"
+};
+function categoryLabel(category) {
+  if (category === void 0) return NOT_SET;
+  return CATEGORY_LABELS[category] ?? category;
+}
+function list(values) {
+  return values === void 0 || values.length === 0 ? NOT_SET : values.join("\n");
+}
+function fieldLabel(field) {
+  return `${field.source.container}.${field.source.field}`;
+}
+function personalFields(catalog) {
+  return catalog.fields.filter((f) => f.status !== "not-pii");
+}
+function purposeRow(purpose, index, fields, catalog) {
+  const mine = fields.filter((f) => (f.purposes ?? []).includes(purpose.key));
+  const sensitive = mine.filter((f) => isSensitiveCategory(f.category));
+  const categories = [...new Set(mine.map((f) => categoryLabel(f.category)))].sort();
+  return [
+    String(index + 1),
+    purpose.label,
+    purpose.description ?? "",
+    LEGAL_BASIS_LABELS[purpose.legalBasis] ?? purpose.legalBasis,
+    categories.length === 0 ? NOT_SET : categories.join("\n"),
+    mine.length === 0 ? NOT_SET : mine.map(fieldLabel).join("\n"),
+    sensitive.length === 0 ? "\u0E44\u0E21\u0E48\u0E21\u0E35" : sensitive.map(fieldLabel).join("\n"),
+    purpose.retention === "indefinite" ? "\u0E44\u0E21\u0E48\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E23\u0E30\u0E22\u0E30\u0E40\u0E27\u0E25\u0E32" : purpose.retention,
+    list(purpose.recipients),
+    list(catalog.access?.whoCanAccess),
+    catalog.access?.requestChannel ?? NOT_SET,
+    catalog.access?.rightsUrl ?? NOT_SET,
+    list(catalog.access?.refusalGrounds),
+    list(catalog.securityMeasures)
+  ];
+}
+function activitiesSheet(catalog) {
+  const fields = personalFields(catalog);
+  const rows = [
+    [
+      "\u0E25\u0E33\u0E14\u0E31\u0E1A",
+      "\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E30\u0E21\u0E27\u0E25\u0E1C\u0E25 / \u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\n\u0E21.39(2)",
+      "\u0E04\u0E33\u0E2D\u0E18\u0E34\u0E1A\u0E32\u0E22",
+      "\u0E10\u0E32\u0E19\u0E17\u0E32\u0E07\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22\n\u0E21.24 / \u0E21.26",
+      "\u0E2B\u0E21\u0E27\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E40\u0E01\u0E47\u0E1A\n\u0E21.39(1)",
+      "\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E40\u0E01\u0E35\u0E48\u0E22\u0E27\u0E02\u0E49\u0E2D\u0E07\n\u0E21.39(1)",
+      "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\n\u0E21.26",
+      "\u0E23\u0E30\u0E22\u0E30\u0E40\u0E27\u0E25\u0E32\u0E40\u0E01\u0E47\u0E1A\n\u0E21.39(4)",
+      "\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 / \u0E01\u0E32\u0E23\u0E40\u0E1B\u0E34\u0E14\u0E40\u0E1C\u0E22\n\u0E21.39(6)",
+      "\u0E1C\u0E39\u0E49\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07\u0E20\u0E32\u0E22\u0E43\u0E19\n\u0E21.39(5)",
+      "\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E43\u0E0A\u0E49\u0E2A\u0E34\u0E17\u0E18\u0E34\n\u0E21.39(5)",
+      "\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E19\u0E42\u0E22\u0E1A\u0E32\u0E22",
+      "\u0E40\u0E2B\u0E15\u0E38\u0E17\u0E35\u0E48\u0E1B\u0E0F\u0E34\u0E40\u0E2A\u0E18\u0E04\u0E33\u0E02\u0E2D\u0E44\u0E14\u0E49\n\u0E21.39(7)",
+      "\u0E21\u0E32\u0E15\u0E23\u0E01\u0E32\u0E23\u0E04\u0E27\u0E32\u0E21\u0E21\u0E31\u0E48\u0E19\u0E04\u0E07\u0E1B\u0E25\u0E2D\u0E14\u0E20\u0E31\u0E22\n\u0E21.37(1)"
+    ]
+  ];
+  catalog.purposes.forEach((purpose, i) => {
+    rows.push(purposeRow(purpose, i, fields, catalog));
+  });
+  const unassigned = fields.filter((f) => (f.purposes ?? []).length === 0);
+  if (unassigned.length > 0) {
+    rows.push([
+      "!",
+      "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E1C\u0E39\u0E01\u0E01\u0E31\u0E1A\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E43\u0E14",
+      `${unassigned.length} \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19 \u0E08\u0E36\u0E07\u0E22\u0E31\u0E07\u0E25\u0E07\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39 \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49`,
+      NOT_SET,
+      [...new Set(unassigned.map((f) => categoryLabel(f.category)))].sort().join("\n"),
+      unassigned.map(fieldLabel).join("\n"),
+      unassigned.filter((f) => isSensitiveCategory(f.category)).map(fieldLabel).join("\n") || "\u0E44\u0E21\u0E48\u0E21\u0E35",
+      NOT_SET,
+      NOT_SET,
+      NOT_SET,
+      NOT_SET,
+      NOT_SET,
+      NOT_SET,
+      NOT_SET
+    ]);
+  }
+  return {
+    name: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 \u0E21.39",
+    widths: [6, 32, 34, 30, 24, 30, 24, 14, 26, 24, 24, 26, 28, 30],
+    rows
+  };
+}
+function fieldsSheet(catalog) {
+  const rows = [
+    [
+      "\u0E23\u0E2B\u0E31\u0E2A\u0E1F\u0E34\u0E25\u0E14\u0E4C",
+      "\u0E42\u0E21\u0E40\u0E14\u0E25",
+      "\u0E1F\u0E34\u0E25\u0E14\u0E4C",
+      "\u0E0A\u0E19\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",
+      "\u0E2B\u0E21\u0E27\u0E14",
+      "\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27 \u0E21.26",
+      "\u0E2A\u0E16\u0E32\u0E19\u0E30",
+      "\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C",
+      "\u0E23\u0E30\u0E22\u0E30\u0E40\u0E27\u0E25\u0E32\u0E40\u0E01\u0E47\u0E1A",
+      "\u0E41\u0E2B\u0E25\u0E48\u0E07\u0E17\u0E35\u0E48\u0E21\u0E32\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A",
+      "\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E17\u0E35\u0E48\u0E23\u0E30\u0E1A\u0E38\u0E27\u0E48\u0E32\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48",
+      "\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38",
+      "\u0E1E\u0E1A\u0E04\u0E23\u0E31\u0E49\u0E07\u0E41\u0E23\u0E01"
+    ]
+  ];
+  for (const field of [...catalog.fields].sort((a, b) => a.id.localeCompare(b.id))) {
+    rows.push([
+      field.id,
+      field.source.container,
+      field.source.field,
+      field.source.type ?? "",
+      field.status === "not-pii" ? "\u2014" : categoryLabel(field.category),
+      isSensitiveCategory(field.category) ? "\u0E43\u0E0A\u0E48" : "",
+      STATUS_LABELS[field.status] + (field.orphaned === true ? " (\u0E2B\u0E32\u0E22\u0E44\u0E1B\u0E08\u0E32\u0E01\u0E0B\u0E2D\u0E23\u0E4C\u0E2A\u0E41\u0E25\u0E49\u0E27)" : ""),
+      (field.purposes ?? []).join("\n"),
+      field.retention ?? "",
+      `${field.source.file}:${field.source.line}`,
+      field.reason ?? "",
+      field.notes ?? "",
+      field.firstSeen ?? ""
+    ]);
+  }
+  return {
+    name: "\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1F\u0E34\u0E25\u0E14\u0E4C",
+    widths: [30, 20, 20, 12, 26, 12, 22, 22, 14, 34, 40, 30, 12],
+    rows
+  };
+}
+function controllerSheet(catalog, generatedOn) {
+  const c = catalog.controller;
+  const rows = [
+    ["\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D", "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14", "\u0E2D\u0E49\u0E32\u0E07\u0E2D\u0E34\u0E07"],
+    ["\u0E1C\u0E39\u0E49\u0E04\u0E27\u0E1A\u0E04\u0E38\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25", c?.name ?? NOT_SET, "\u0E21.39(3)"],
+    ["\u0E17\u0E35\u0E48\u0E2D\u0E22\u0E39\u0E48", c?.address ?? NOT_SET, "\u0E21.39(3)"],
+    ["\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D", c?.contact ?? NOT_SET, "\u0E21.39(3)"],
+    ["\u0E40\u0E08\u0E49\u0E32\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48\u0E04\u0E38\u0E49\u0E21\u0E04\u0E23\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 (DPO)", c?.dpo?.name ?? NOT_SET, "\u0E21.41"],
+    ["\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D DPO", c?.dpo?.contact ?? NOT_SET, "\u0E21.41"],
+    ["\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E40\u0E08\u0E49\u0E32\u0E02\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E43\u0E0A\u0E49\u0E2A\u0E34\u0E17\u0E18\u0E34", catalog.access?.requestChannel ?? NOT_SET, "\u0E21.39(5)"],
+    ["\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E19\u0E42\u0E22\u0E1A\u0E32\u0E22\u0E04\u0E27\u0E32\u0E21\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27", catalog.access?.rightsUrl ?? NOT_SET, "\u0E21.39(5)"],
+    ["\u0E1C\u0E39\u0E49\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E20\u0E32\u0E22\u0E43\u0E19\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23", list(catalog.access?.whoCanAccess), "\u0E21.39(5)"],
+    ["\u0E40\u0E2B\u0E15\u0E38\u0E17\u0E35\u0E48\u0E1B\u0E0F\u0E34\u0E40\u0E2A\u0E18\u0E04\u0E33\u0E02\u0E2D\u0E43\u0E0A\u0E49\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E44\u0E14\u0E49", list(catalog.access?.refusalGrounds), "\u0E21.39(7)"],
+    ["\u0E21\u0E32\u0E15\u0E23\u0E01\u0E32\u0E23\u0E23\u0E31\u0E01\u0E29\u0E32\u0E04\u0E27\u0E32\u0E21\u0E21\u0E31\u0E48\u0E19\u0E04\u0E07\u0E1B\u0E25\u0E2D\u0E14\u0E20\u0E31\u0E22", list(catalog.securityMeasures), "\u0E21.37(1)"],
+    ["", "", ""],
+    ["\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E2D\u0E2D\u0E01\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23", generatedOn, ""],
+    ["\u0E17\u0E35\u0E48\u0E21\u0E32\u0E02\u0E2D\u0E07\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23", "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E08\u0E32\u0E01 pii-catalog.yaml \u0E14\u0E49\u0E27\u0E22 arak ropa", ""]
+  ];
+  return { name: "\u0E1C\u0E39\u0E49\u0E04\u0E27\u0E1A\u0E04\u0E38\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25", widths: [34, 60, 14], rows };
+}
+function buildRopa(catalog, generatedOn) {
+  const undecided = catalog.fields.filter(
+    (f) => (f.status === "unmarked" || f.status === "deferred") && f.orphaned !== true
+  ).length;
+  return {
+    sheets: [controllerSheet(catalog, generatedOn), activitiesSheet(catalog), fieldsSheet(catalog)],
+    undecided,
+    purposes: catalog.purposes.length,
+    fields: personalFields(catalog).length
+  };
+}
+
+// ../cli/src/sarif.ts
+var SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json";
+var INFO_URI = "https://github.com/ksmaster03/arak";
+function buildLog(rules, results, version) {
+  const used = new Set(results.map((r) => r.ruleId));
+  return `${JSON.stringify(
+    {
+      $schema: SCHEMA,
+      version: "2.1.0",
+      runs: [
+        {
+          tool: {
+            driver: {
+              name: "Arak",
+              version,
+              informationUri: INFO_URI,
+              rules: rules.filter((rule) => used.has(rule.id))
+            }
+          },
+          results
+        }
+      ]
+    },
+    null,
+    2
+  )}
+`;
+}
+function location(file, line, column) {
+  return {
+    physicalLocation: {
+      artifactLocation: { uri: file },
+      region: column === void 0 ? { startLine: line } : { startLine: line, startColumn: column }
+    }
+  };
+}
+var STATUS_RULES = [
+  {
+    id: "arak/undecided-field",
+    name: "UndecidedPersonalDataField",
+    shortDescription: { text: "\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E19\u0E35\u0E49\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E04\u0E23\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48" },
+    fullDescription: {
+      text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E30\u0E21\u0E27\u0E25\u0E1C\u0E25\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39 \u0E15\u0E49\u0E2D\u0E07\u0E23\u0E30\u0E1A\u0E38\u0E44\u0E14\u0E49\u0E27\u0E48\u0E32\u0E40\u0E01\u0E47\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E30\u0E44\u0E23 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2D\u0E30\u0E44\u0E23 \u0E41\u0E25\u0E30\u0E14\u0E49\u0E27\u0E22\u0E10\u0E32\u0E19\u0E17\u0E32\u0E07\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22\u0E43\u0E14 \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E17\u0E33\u0E43\u0E2B\u0E49\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E31\u0E49\u0E19\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A"
+    },
+    defaultConfiguration: { level: "warning" },
+    help: {
+      text: '\u0E40\u0E15\u0E34\u0E21\u0E04\u0E2D\u0E21\u0E40\u0E21\u0E19\u0E15\u0E4C\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E40\u0E2B\u0E19\u0E37\u0E2D\u0E1F\u0E34\u0E25\u0E14\u0E4C \u2014 /// @pii(category=<\u0E2B\u0E21\u0E27\u0E14>, purposes=<\u0E04\u0E35\u0E22\u0E4C>) \u0E2B\u0E23\u0E37\u0E2D /// @not-pii(reason="\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25") \u0E16\u0E49\u0E32\u0E1E\u0E34\u0E08\u0E32\u0E23\u0E13\u0E32\u0E41\u0E25\u0E49\u0E27\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25'
+    }
+  },
+  {
+    id: "arak/sensitive-field",
+    name: "SensitivePersonalDataField",
+    shortDescription: { text: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19" },
+    fullDescription: {
+      text: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E40\u0E0A\u0E48\u0E19\u0E2A\u0E38\u0E02\u0E20\u0E32\u0E1E \u0E28\u0E32\u0E2A\u0E19\u0E32 \u0E0A\u0E35\u0E27\u0E21\u0E32\u0E15\u0E23 \u0E15\u0E49\u0E2D\u0E07\u0E44\u0E14\u0E49\u0E04\u0E27\u0E32\u0E21\u0E22\u0E34\u0E19\u0E22\u0E2D\u0E21\u0E42\u0E14\u0E22\u0E0A\u0E31\u0E14\u0E41\u0E08\u0E49\u0E07 \u0E40\u0E27\u0E49\u0E19\u0E41\u0E15\u0E48\u0E40\u0E02\u0E49\u0E32\u0E02\u0E49\u0E2D\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E43\u0E19\u0E21\u0E32\u0E15\u0E23\u0E32\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19 \u0E08\u0E36\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E02\u0E36\u0E49\u0E19\u0E42\u0E1B\u0E23\u0E14\u0E31\u0E01\u0E0A\u0E31\u0E19\u0E40\u0E2A\u0E21\u0E2D"
+    },
+    defaultConfiguration: { level: "error" },
+    help: { text: "\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E19\u0E35\u0E49\u0E01\u0E48\u0E2D\u0E19 \u0E41\u0E25\u0E49\u0E27\u0E15\u0E23\u0E27\u0E08\u0E27\u0E48\u0E32\u0E10\u0E32\u0E19\u0E17\u0E32\u0E07\u0E01\u0E0E\u0E2B\u0E21\u0E32\u0E22\u0E02\u0E2D\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E08\u0E23\u0E34\u0E07" }
+  },
+  {
+    id: "arak/catalog-error",
+    name: "CatalogError",
+    shortDescription: { text: "\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14" },
+    defaultConfiguration: { level: "error" },
+    help: { text: "\u0E23\u0E31\u0E19 arak status \u0E43\u0E19\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14" }
+  },
+  {
+    id: "arak/catalog-warning",
+    name: "CatalogWarning",
+    shortDescription: { text: "\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E21\u0E35\u0E08\u0E38\u0E14\u0E17\u0E35\u0E48\u0E04\u0E27\u0E23\u0E14\u0E39" },
+    defaultConfiguration: { level: "warning" },
+    help: { text: "\u0E23\u0E31\u0E19 arak status \u0E43\u0E19\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14" }
+  }
+];
+function statusToSarif(fields, problems, version) {
+  const results = [];
+  for (const field of fields) {
+    if (field.status !== "unmarked" || field.orphaned === true) continue;
+    const sensitive = isSensitiveCategory(field.category);
+    const parts = [
+      `${field.source.container}.${field.source.field} \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E27\u0E48\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48`
+    ];
+    if (field.category !== void 0) {
+      parts.push(
+        sensitive ? `\u0E15\u0E31\u0E27\u0E40\u0E14\u0E32\u0E40\u0E2A\u0E19\u0E2D\u0E27\u0E48\u0E32\u0E19\u0E48\u0E32\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19 ${field.category} \u0E0B\u0E36\u0E48\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 26` : `\u0E15\u0E31\u0E27\u0E40\u0E14\u0E32\u0E40\u0E2A\u0E19\u0E2D\u0E27\u0E48\u0E32\u0E19\u0E48\u0E32\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19 ${field.category}`
+      );
+    }
+    parts.push("\u0E40\u0E15\u0E34\u0E21 /// @pii(...) \u0E2B\u0E23\u0E37\u0E2D /// @not-pii(reason=...) \u0E40\u0E2B\u0E19\u0E37\u0E2D\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E19\u0E35\u0E49");
+    results.push({
+      ruleId: sensitive ? "arak/sensitive-field" : "arak/undecided-field",
+      level: sensitive ? "error" : "warning",
+      message: { text: parts.join(" \u2014 ") },
+      locations: [location(field.source.file, field.source.line)],
+      partialFingerprints: { arakFieldId: field.id }
+    });
+  }
+  for (const problem of problems) {
+    if (problem.file === void 0) continue;
+    results.push({
+      ruleId: problem.level === "error" ? "arak/catalog-error" : "arak/catalog-warning",
+      level: problem.level === "error" ? "error" : "warning",
+      message: { text: `${problem.id}: ${problem.message}` },
+      locations: [location(problem.file, problem.line ?? 1)],
+      partialFingerprints: { arakProblemId: `${problem.id}:${problem.message}` }
+    });
+  }
+  return buildLog(STATUS_RULES, results, version);
+}
+function scanToSarif(findings, version) {
+  const types = [...new Set(findings.map((f) => f.match.type))].sort();
+  const rules = types.map((type) => ({
+    id: `arak/real-data/${type}`,
+    name: `RealPersonalData_${type}`,
+    shortDescription: { text: `\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07\u0E0A\u0E19\u0E34\u0E14 ${type} \u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C` },
+    fullDescription: {
+      text: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07\u0E17\u0E35\u0E48\u0E04\u0E49\u0E32\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E0B\u0E2D\u0E23\u0E4C\u0E2A \u0E40\u0E0A\u0E48\u0E19\u0E44\u0E1F\u0E25\u0E4C seed \u0E2B\u0E23\u0E37\u0E2D fixture \u0E08\u0E30\u0E16\u0E39\u0E01\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E44\u0E1B\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E42\u0E04\u0E49\u0E14\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35\u0E04\u0E19 clone \u0E41\u0E25\u0E30\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34 git \u0E15\u0E25\u0E2D\u0E14\u0E44\u0E1B"
+    },
+    defaultConfiguration: { level: "error" },
+    help: { text: "\u0E22\u0E49\u0E32\u0E22\u0E04\u0E48\u0E32\u0E2D\u0E2D\u0E01\u0E44\u0E1B\u0E19\u0E2D\u0E01 repo \u0E2B\u0E23\u0E37\u0E2D\u0E41\u0E17\u0E19\u0E14\u0E49\u0E27\u0E22\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E21\u0E21\u0E15\u0E34\u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E1C\u0E39\u0E01\u0E01\u0E31\u0E1A\u0E15\u0E31\u0E27\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E08\u0E23\u0E34\u0E07" }
+  }));
+  const results = findings.map((finding) => ({
+    ruleId: `arak/real-data/${finding.match.type}`,
+    level: "error",
+    message: {
+      text: `\u0E1E\u0E1A\u0E04\u0E48\u0E32\u0E17\u0E35\u0E48\u0E19\u0E48\u0E32\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19 ${finding.match.type} \u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07 (${finding.preview}) \u0E04\u0E27\u0E32\u0E21\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E31\u0E48\u0E19 ${finding.match.confidence} \u2014 \u0E22\u0E49\u0E32\u0E22\u0E2D\u0E2D\u0E01\u0E2B\u0E23\u0E37\u0E2D\u0E41\u0E17\u0E19\u0E14\u0E49\u0E27\u0E22\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E21\u0E21\u0E15\u0E34`
+    },
+    locations: [location(finding.file, finding.line, finding.column)],
+    partialFingerprints: {
+      arakFinding: `${finding.match.type}:${finding.file}:${finding.line}:${finding.column}`
+    }
+  }));
+  return buildLog(rules, results, version);
+}
+
 // ../cli/src/scan.ts
 import { readdirSync as readdirSync2, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
 import { join as join3, relative as relative2, sep as sep2 } from "node:path";
@@ -8971,42 +9463,77 @@ function scanText(text, file, minConfidence) {
     return { file, line, column, match, preview: maskValue(match.value) };
   });
 }
-function collectFiles(root, explicit) {
-  if (explicit.length > 0) {
-    return explicit.map((p) => relative2(root, join3(root, p)).split(sep2).join("/"));
+var toPosix = (path) => path.split(sep2).join("/");
+function walkDir(root, dir, depth, found) {
+  if (depth > MAX_DEPTH2) return;
+  let entries;
+  try {
+    entries = readdirSync2(dir);
+  } catch {
+    return;
   }
-  const found = [];
-  const walk = (dir, depth) => {
-    if (depth > MAX_DEPTH2) return;
-    let entries;
+  for (const entry of entries) {
+    if (entry.startsWith(".") && entry !== ".env") continue;
+    const full = join3(dir, entry);
+    let stat;
     try {
-      entries = readdirSync2(dir);
+      stat = statSync2(full);
     } catch {
-      return;
+      continue;
     }
-    for (const entry of entries) {
-      if (entry.startsWith(".") && entry !== ".env") continue;
-      const full = join3(dir, entry);
-      let stat;
-      try {
-        stat = statSync2(full);
-      } catch {
-        continue;
-      }
-      if (stat.isDirectory()) {
-        if (SKIP_DIRS2.has(entry)) continue;
-        walk(full, depth + 1);
-        continue;
-      }
-      if (stat.size > MAX_BYTES) continue;
-      const dot = entry.lastIndexOf(".");
-      const ext = dot === -1 ? "" : entry.slice(dot);
-      if (!SCANNABLE.has(ext)) continue;
-      found.push(relative2(root, full).split(sep2).join("/"));
+    if (stat.isDirectory()) {
+      if (SKIP_DIRS2.has(entry)) continue;
+      walkDir(root, full, depth + 1, found);
+      continue;
     }
-  };
-  walk(root, 0);
-  return found.sort();
+    if (stat.size > MAX_BYTES) continue;
+    const dot = entry.lastIndexOf(".");
+    const ext = dot === -1 ? "" : entry.slice(dot);
+    if (!SCANNABLE.has(ext)) continue;
+    found.push(toPosix(relative2(root, full)));
+  }
+}
+function collectFiles(root, explicit) {
+  if (explicit.length === 0) {
+    const found = [];
+    walkDir(root, root, 0, found);
+    return { files: found.sort(), unresolved: [] };
+  }
+  const files = /* @__PURE__ */ new Set();
+  const unresolved = [];
+  let tree;
+  for (const raw of explicit) {
+    const pattern = toPosix(raw);
+    if (/[*?]/.test(pattern)) {
+      tree ??= (() => {
+        const found = [];
+        walkDir(root, root, 0, found);
+        return found.sort();
+      })();
+      const re = globToRegExp(pattern);
+      const hits = tree.filter((file) => re.test(file));
+      if (hits.length === 0) unresolved.push(raw);
+      for (const hit of hits) files.add(hit);
+      continue;
+    }
+    const full = join3(root, pattern);
+    let stat;
+    try {
+      stat = statSync2(full);
+    } catch {
+      unresolved.push(raw);
+      continue;
+    }
+    if (stat.isDirectory()) {
+      const found = [];
+      walkDir(root, full, 0, found);
+      if (found.length === 0) unresolved.push(raw);
+      for (const file of found) files.add(file);
+      continue;
+    }
+    files.add(toPosix(relative2(root, full)));
+  }
+  return { files: [...files].sort(), unresolved };
 }
 function scanFiles(root, files, minConfidence) {
   const findings = [];
@@ -9024,6 +9551,128 @@ function scanFiles(root, files, minConfidence) {
     findings.push(...scanText(text, file, minConfidence));
   }
   return { findings, scanned, skipped };
+}
+
+// ../cli/src/semgrep.ts
+var SINKS = [
+  {
+    label: "log \u0E02\u0E2D\u0E07\u0E41\u0E2D\u0E1B",
+    patterns: [
+      "console.log(...)",
+      "console.info(...)",
+      "console.warn(...)",
+      "console.error(...)",
+      "console.debug(...)",
+      "logger.info(...)",
+      "logger.warn(...)",
+      "logger.error(...)",
+      "logger.debug(...)"
+    ]
+  },
+  {
+    label: "\u0E04\u0E33\u0E15\u0E2D\u0E1A\u0E17\u0E35\u0E48\u0E2A\u0E48\u0E07\u0E2D\u0E2D\u0E01\u0E19\u0E2D\u0E01\u0E23\u0E30\u0E1A\u0E1A",
+    patterns: ["res.json(...)", "res.send(...)", "reply.send(...)"]
+  },
+  {
+    label: "\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23\u0E02\u0E2D\u0E07\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E17\u0E35\u0E48\u0E2A\u0E32\u0E21",
+    patterns: [
+      "analytics.track(...)",
+      "mixpanel.track(...)",
+      "posthog.capture(...)",
+      "Sentry.captureException(...)",
+      "Sentry.captureMessage(...)",
+      "Sentry.setContext(...)"
+    ]
+  }
+];
+function indent(lines, spaces) {
+  const pad2 = " ".repeat(spaces);
+  return lines.map((line) => line === "" ? "" : pad2 + line);
+}
+function ruleFor(group) {
+  const names = [...new Set(group.fields.map((f) => f.source.field))].sort();
+  const examples = [...new Set(group.fields.map((f) => f.id))].sort().slice(0, 12);
+  const message = `${group.title} \u2014 \u0E04\u0E48\u0E32\u0E17\u0E35\u0E48\u0E21\u0E32\u0E08\u0E32\u0E01\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E19\u0E35\u0E49\u0E01\u0E33\u0E25\u0E31\u0E07\u0E44\u0E2B\u0E25\u0E2D\u0E2D\u0E01\u0E44\u0E1B\u0E22\u0E31\u0E07 log \u0E2B\u0E23\u0E37\u0E2D\u0E1B\u0E25\u0E32\u0E22\u0E17\u0E32\u0E07\u0E20\u0E32\u0E22\u0E19\u0E2D\u0E01
+\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E23\u0E30\u0E1A\u0E38\u0E44\u0E27\u0E49 ${group.fields.length} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 \u0E40\u0E0A\u0E48\u0E19 ${examples.slice(0, 4).join(", ")}
+\u0E16\u0E49\u0E32\u0E15\u0E31\u0E49\u0E07\u0E43\u0E08\u0E43\u0E2B\u0E49\u0E2D\u0E2D\u0E01\u0E08\u0E23\u0E34\u0E07 \u0E43\u0E2B\u0E49\u0E1B\u0E34\u0E14\u0E1A\u0E31\u0E07\u0E04\u0E48\u0E32\u0E01\u0E48\u0E2D\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E43\u0E2A\u0E48 // nosemgrep \u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E01\u0E33\u0E01\u0E31\u0E1A\u0E44\u0E27\u0E49\u0E43\u0E19\u0E42\u0E04\u0E49\u0E14`;
+  const lines = [
+    `- id: ${group.id}`,
+    "  mode: taint",
+    "  languages: [typescript, javascript]",
+    `  severity: ${group.severity}`,
+    `  message: |`,
+    ...indent(message.split("\n"), 4),
+    "  metadata:",
+    "    category: security",
+    "    subcategory: [audit]",
+    "    technology: [prisma]",
+    "    generated-by: arak",
+    `    arak-fields: ${group.fields.length}`,
+    `    arak-field-names: ${names.length}`,
+    "  pattern-sources:"
+  ];
+  for (const name of names) {
+    lines.push(`    - pattern: $OBJ.${name}`);
+    lines.push(`    - pattern: |`);
+    lines.push(`        { ..., ${name}: $V, ... }`);
+  }
+  lines.push("  pattern-sinks:");
+  for (const sink of SINKS) {
+    for (const pattern of sink.patterns) {
+      lines.push(`    - pattern: ${pattern}`);
+    }
+  }
+  lines.push("  pattern-sanitizers:");
+  lines.push("    # \u0E04\u0E48\u0E32\u0E17\u0E35\u0E48\u0E1C\u0E48\u0E32\u0E19\u0E01\u0E32\u0E23\u0E1B\u0E34\u0E14\u0E1A\u0E31\u0E07\u0E2B\u0E23\u0E37\u0E2D\u0E41\u0E2E\u0E0A\u0E41\u0E25\u0E49\u0E27\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2D\u0E35\u0E01\u0E15\u0E48\u0E2D\u0E44\u0E1B");
+  lines.push("    - pattern: mask(...)");
+  lines.push("    - pattern: redact(...)");
+  lines.push("    - pattern: anonymize(...)");
+  lines.push("    - pattern: $X.hash(...)");
+  return lines;
+}
+function buildSemgrep(catalog) {
+  const marked = catalog.fields.filter((f) => f.status === "marked" && f.orphaned !== true);
+  const sensitive = marked.filter((f) => isSensitiveCategory(f.category));
+  const general = marked.filter((f) => !isSensitiveCategory(f.category));
+  const uncovered = catalog.fields.filter(
+    (f) => (f.status === "unmarked" || f.status === "deferred") && f.orphaned !== true
+  ).length;
+  const groups = [];
+  if (sensitive.length > 0) {
+    groups.push({
+      id: "arak-sensitive-data-to-sink",
+      severity: "ERROR",
+      title: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E2B\u0E25\u0E38\u0E14\u0E2D\u0E2D\u0E01\u0E19\u0E2D\u0E01\u0E23\u0E30\u0E1A\u0E1A",
+      fields: sensitive
+    });
+  }
+  if (general.length > 0) {
+    groups.push({
+      id: "arak-personal-data-to-sink",
+      severity: "WARNING",
+      title: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E2B\u0E25\u0E38\u0E14\u0E2D\u0E2D\u0E01\u0E19\u0E2D\u0E01\u0E23\u0E30\u0E1A\u0E1A",
+      fields: general
+    });
+  }
+  const header = [
+    "# \u0E01\u0E0E Semgrep \u0E17\u0E35\u0E48\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E08\u0E32\u0E01 pii-catalog.yaml \u0E14\u0E49\u0E27\u0E22 arak semgrep",
+    "# \u0E2D\u0E22\u0E48\u0E32\u0E41\u0E01\u0E49\u0E44\u0E1F\u0E25\u0E4C\u0E19\u0E35\u0E49\u0E14\u0E49\u0E27\u0E22\u0E21\u0E37\u0E2D \u2014 \u0E41\u0E01\u0E49\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E41\u0E25\u0E49\u0E27\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E43\u0E2B\u0E21\u0E48",
+    "#",
+    "# \u0E01\u0E0E\u0E40\u0E2B\u0E25\u0E48\u0E32\u0E19\u0E35\u0E49\u0E08\u0E31\u0E1A\u0E08\u0E32\u0E01\u0E0A\u0E37\u0E48\u0E2D\u0E1F\u0E34\u0E25\u0E14\u0E4C \u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E0A\u0E19\u0E34\u0E14\u0E02\u0E2D\u0E07\u0E04\u0E48\u0E32 \u0E1C\u0E25\u0E1A\u0E27\u0E01\u0E25\u0E27\u0E07\u0E08\u0E36\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E1B\u0E01\u0E15\u0E34",
+    "# \u0E1B\u0E34\u0E14\u0E23\u0E32\u0E22\u0E08\u0E38\u0E14\u0E14\u0E49\u0E27\u0E22 // nosemgrep \u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25 \u0E2D\u0E22\u0E48\u0E32\u0E1B\u0E34\u0E14\u0E17\u0E31\u0E49\u0E07\u0E01\u0E0E",
+    "#",
+    `# \u0E04\u0E23\u0E2D\u0E1A\u0E04\u0E25\u0E38\u0E21\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27 ${marked.length} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23` + (uncovered > 0 ? ` \xB7 \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E01\u0E0E\u0E04\u0E38\u0E49\u0E21\u0E2D\u0E35\u0E01 ${uncovered} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19` : ""),
+    "",
+    "rules:"
+  ];
+  const body = groups.flatMap((group) => indent(ruleFor(group), 2));
+  return {
+    yaml: `${[...header, ...body].join("\n")}
+`,
+    rules: groups.length,
+    covered: marked.length,
+    uncovered
+  };
 }
 
 // ../cli/src/ui.ts
@@ -9051,8 +9700,155 @@ function pad(text, width) {
   return text.length >= width ? text : text + " ".repeat(width - text.length);
 }
 
+// ../cli/src/xlsx.ts
+import { deflateRawSync } from "node:zlib";
+function columnName(index) {
+  let name = "";
+  let n = index;
+  for (; ; ) {
+    name = String.fromCharCode(65 + n % 26) + name;
+    if (n < 26) return name;
+    n = Math.floor(n / 26) - 1;
+  }
+}
+function escapeXml(value) {
+  let out = "";
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code < 32 && ch !== "	" && ch !== "\n") continue;
+    if (ch === "&") out += "&amp;";
+    else if (ch === "<") out += "&lt;";
+    else if (ch === ">") out += "&gt;";
+    else if (ch === '"') out += "&quot;";
+    else out += ch;
+  }
+  return out;
+}
+var HEADER_STYLE = 1;
+var BODY_STYLE = 2;
+function sheetXml(sheet) {
+  const cols = sheet.widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("");
+  const rows = sheet.rows.map((row, r) => {
+    const cells = row.map((value, c) => {
+      if (value === "") return "";
+      const ref = `${columnName(c)}${r + 1}`;
+      const style = r === 0 ? HEADER_STYLE : BODY_STYLE;
+      return `<c r="${ref}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+    }).join("");
+    const attrs = r === 0 ? ` ht="30" customHeight="1"` : "";
+    return `<row r="${r + 1}"${attrs}>${cells}</row>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>` + (cols === "" ? "" : `<cols>${cols}</cols>`) + `<sheetData>${rows}</sheetData></worksheet>`;
+}
+var STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Tahoma"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2F4858"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+function safeSheetName(name) {
+  return name.replace(/[\\/?*[\]:]/g, " ").slice(0, 31);
+}
+function buildParts(sheets) {
+  const overrides = sheets.map(
+    (_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  ).join("");
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` + overrides + `</Types>`;
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>` + sheets.map(
+    (s, i) => `<sheet name="${escapeXml(safeSheetName(s.name))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`
+  ).join("") + `</sheets></workbook>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` + sheets.map(
+    (_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+  ).join("") + `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const text = (s) => Buffer.from(s, "utf8");
+  return [
+    { name: "[Content_Types].xml", data: text(contentTypes) },
+    { name: "_rels/.rels", data: text(rootRels) },
+    { name: "xl/workbook.xml", data: text(workbook) },
+    { name: "xl/_rels/workbook.xml.rels", data: text(workbookRels) },
+    { name: "xl/styles.xml", data: text(STYLES_XML) },
+    ...sheets.map((sheet, i) => ({
+      name: `xl/worksheets/sheet${i + 1}.xml`,
+      data: text(sheetXml(sheet))
+    }))
+  ];
+}
+var CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    let c = i;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    table[i] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(buffer) {
+  let crc = 4294967295;
+  for (const byte of buffer) crc = CRC_TABLE[(crc ^ byte) & 255] ^ crc >>> 8;
+  return (crc ^ 4294967295) >>> 0;
+}
+function zip(parts) {
+  const DOS_TIME = 0;
+  const DOS_DATE = 33;
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const part of parts) {
+    const name = Buffer.from(part.name, "utf8");
+    const compressed = deflateRawSync(part.data);
+    const crc = crc32(part.data);
+    const local = Buffer.alloc(30 + name.length);
+    local.writeUInt32LE(67324752, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(2048, 6);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt16LE(DOS_TIME, 10);
+    local.writeUInt16LE(DOS_DATE, 12);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(compressed.length, 18);
+    local.writeUInt32LE(part.data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    local.writeUInt16LE(0, 28);
+    name.copy(local, 30);
+    const central = Buffer.alloc(46 + name.length);
+    central.writeUInt32LE(33639248, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(2048, 8);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt16LE(DOS_TIME, 12);
+    central.writeUInt16LE(DOS_DATE, 14);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(compressed.length, 20);
+    central.writeUInt32LE(part.data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt16LE(0, 30);
+    central.writeUInt16LE(0, 32);
+    central.writeUInt16LE(0, 34);
+    central.writeUInt16LE(0, 36);
+    central.writeUInt32LE(0, 38);
+    central.writeUInt32LE(offset, 42);
+    name.copy(central, 46);
+    locals.push(local, compressed);
+    centrals.push(central);
+    offset += local.length + compressed.length;
+  }
+  const centralBlock = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(101010256, 0);
+  end.writeUInt16LE(0, 4);
+  end.writeUInt16LE(0, 6);
+  end.writeUInt16LE(parts.length, 8);
+  end.writeUInt16LE(parts.length, 10);
+  end.writeUInt32LE(centralBlock.length, 12);
+  end.writeUInt32LE(offset, 16);
+  end.writeUInt16LE(0, 20);
+  return Buffer.concat([...locals, centralBlock, end]);
+}
+function buildXlsx(sheets) {
+  if (sheets.length === 0) throw new Error("\u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22\u0E2B\u0E19\u0E36\u0E48\u0E07\u0E0A\u0E35\u0E15");
+  return zip(buildParts(sheets));
+}
+
 // ../cli/src/index.ts
 var VERSION = "0.1.0";
+var FORMATS = ["text", "json", "sarif", "fideslang", "semgrep"];
 function parseFlags(argv) {
   const flags = {
     root: process.cwd(),
@@ -9063,7 +9859,8 @@ function parseFlags(argv) {
     minConfidence: 0.7,
     paths: [],
     ignore: [],
-    strict: false
+    strict: false,
+    format: "text"
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -9083,7 +9880,26 @@ function parseFlags(argv) {
         break;
       case "--json":
         flags.json = true;
+        flags.format = "json";
         break;
+      case "--format": {
+        const value = argv[i + 1];
+        if (value === void 0) fail(`--format \u0E15\u0E49\u0E2D\u0E07\u0E15\u0E32\u0E21\u0E14\u0E49\u0E27\u0E22\u0E2B\u0E19\u0E36\u0E48\u0E07\u0E43\u0E19 ${FORMATS.join(" ")}`);
+        if (!FORMATS.includes(value)) {
+          fail(`\u0E44\u0E21\u0E48\u0E23\u0E39\u0E49\u0E08\u0E31\u0E01\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A "${value}" \u2014 \u0E40\u0E25\u0E37\u0E2D\u0E01\u0E08\u0E32\u0E01 ${FORMATS.join(" ")}`);
+        }
+        flags.format = value;
+        if (value === "json") flags.json = true;
+        i += 1;
+        break;
+      }
+      case "--out": {
+        const value = argv[i + 1];
+        if (value === void 0) fail("--out \u0E15\u0E49\u0E2D\u0E07\u0E15\u0E32\u0E21\u0E14\u0E49\u0E27\u0E22\u0E1E\u0E32\u0E18\u0E44\u0E1F\u0E25\u0E4C");
+        flags.out = isAbsolute(value) ? value : resolve(process.cwd(), value);
+        i += 1;
+        break;
+      }
       case "--no-heuristic":
         flags.heuristic = false;
         break;
@@ -9127,6 +9943,9 @@ var HELP = `${bold("arak")} \u2014 \u0E21\u0E32\u0E23\u0E4C\u0E01\u0E02\u0E49\u0
   arak status          \u0E23\u0E32\u0E22\u0E07\u0E32\u0E19\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E42\u0E14\u0E22\u0E44\u0E21\u0E48\u0E41\u0E01\u0E49\u0E44\u0E1F\u0E25\u0E4C (\u0E43\u0E0A\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E14\u0E48\u0E32\u0E19\u0E43\u0E19 CI)
   arak baseline        \u0E22\u0E01\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E44\u0E1B\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E23\u0E34\u0E48\u0E21\u0E19\u0E31\u0E1A\u0E08\u0E32\u0E01\u0E28\u0E39\u0E19\u0E22\u0E4C
   arak scan [paths]    \u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E48\u0E27\u0E19\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E02\u0E2D\u0E07\u0E08\u0E23\u0E34\u0E07\u0E17\u0E35\u0E48\u0E1B\u0E19\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C \u0E40\u0E0A\u0E48\u0E19 seed \u0E2B\u0E23\u0E37\u0E2D fixture
+  arak ropa            \u0E2D\u0E2D\u0E01\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E30\u0E21\u0E27\u0E25\u0E1C\u0E25\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39 \u0E40\u0E1B\u0E47\u0E19 .xlsx
+  arak semgrep         \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E01\u0E0E Semgrep \u0E08\u0E32\u0E01\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E08\u0E31\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E44\u0E2B\u0E25\u0E2D\u0E2D\u0E01\u0E44\u0E1B log
+  arak export          \u0E2A\u0E48\u0E07\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E2D\u0E2D\u0E01\u0E40\u0E1B\u0E47\u0E19\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E17\u0E35\u0E48\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E2D\u0E37\u0E48\u0E19\u0E2D\u0E48\u0E32\u0E19\u0E44\u0E14\u0E49
 
 \u0E15\u0E31\u0E27\u0E40\u0E25\u0E37\u0E2D\u0E01
   --root <path>        \u0E23\u0E32\u0E01\u0E42\u0E1B\u0E23\u0E40\u0E08\u0E01\u0E15\u0E4C (\u0E04\u0E48\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19\u0E04\u0E37\u0E2D\u0E42\u0E1F\u0E25\u0E40\u0E14\u0E2D\u0E23\u0E4C\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19)
@@ -9135,8 +9954,16 @@ var HELP = `${bold("arak")} \u2014 \u0E21\u0E32\u0E23\u0E4C\u0E01\u0E02\u0E49\u0
   --strict             \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A status \u2014 \u0E43\u0E2B\u0E49\u0E2B\u0E19\u0E35\u0E49\u0E40\u0E01\u0E48\u0E32\u0E17\u0E33\u0E43\u0E2B\u0E49\u0E15\u0E01\u0E14\u0E49\u0E27\u0E22
   --min-confidence <n> \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A scan \u2014 \u0E40\u0E01\u0E13\u0E11\u0E4C\u0E04\u0E27\u0E32\u0E21\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E31\u0E48\u0E19 0 \u0E16\u0E36\u0E07 1 (\u0E04\u0E48\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19 0.7)
   --ignore <glob>      \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A scan \u2014 \u0E02\u0E49\u0E32\u0E21\u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E23\u0E07\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A \u0E43\u0E2A\u0E48\u0E0B\u0E49\u0E33\u0E44\u0E14\u0E49
-  --json               \u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E1C\u0E25\u0E40\u0E1B\u0E47\u0E19 JSON
+  --format <fmt>       text (\u0E04\u0E48\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19) \xB7 json \xB7 sarif \xB7 fideslang \xB7 semgrep
+  --out <path>         \u0E40\u0E02\u0E35\u0E22\u0E19\u0E1C\u0E25\u0E25\u0E07\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E17\u0E19\u0E01\u0E32\u0E23\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E2D\u0E2D\u0E01\u0E08\u0E2D
+  --json               \u0E17\u0E32\u0E07\u0E25\u0E31\u0E14\u0E02\u0E2D\u0E07 --format json
   --force              \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A init \u2014 \u0E40\u0E02\u0E35\u0E22\u0E19\u0E17\u0E31\u0E1A\u0E44\u0E1F\u0E25\u0E4C\u0E40\u0E14\u0E34\u0E21
+
+\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C
+  sarif      \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A status \u0E41\u0E25\u0E30 scan \u2014 \u0E2D\u0E31\u0E1B\u0E40\u0E02\u0E49\u0E32 GitHub \u0E14\u0E49\u0E27\u0E22 codeql-action/upload-sarif
+             \u0E41\u0E25\u0E49\u0E27\u0E1C\u0E25\u0E08\u0E30\u0E44\u0E1B\u0E42\u0E1C\u0E25\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E04\u0E2D\u0E21\u0E40\u0E21\u0E19\u0E15\u0E4C\u0E43\u0E19\u0E1A\u0E23\u0E23\u0E17\u0E31\u0E14\u0E17\u0E35\u0E48\u0E21\u0E35\u0E1B\u0E31\u0E0D\u0E2B\u0E32\u0E43\u0E19 pull request
+  fideslang  \u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A export \u2014 \u0E2D\u0E19\u0E38\u0E01\u0E23\u0E21\u0E27\u0E34\u0E18\u0E32\u0E19\u0E01\u0E25\u0E32\u0E07\u0E02\u0E2D\u0E07 ethyca/fideslang (CC BY 4.0)
+             \u0E17\u0E33\u0E43\u0E2B\u0E49\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E44\u0E2B\u0E25\u0E40\u0E02\u0E49\u0E32 Fides, DataHub \u0E41\u0E25\u0E30 OpenMetadata \u0E44\u0E14\u0E49
 
 \u0E23\u0E2B\u0E31\u0E2A\u0E08\u0E1A\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19
   0  \u0E1C\u0E48\u0E32\u0E19
@@ -9145,6 +9972,7 @@ var HELP = `${bold("arak")} \u2014 \u0E21\u0E32\u0E23\u0E4C\u0E01\u0E02\u0E49\u0
 
 \u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38  scan \u0E08\u0E30\u0E44\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E04\u0E48\u0E32\u0E08\u0E23\u0E34\u0E07\u0E2D\u0E2D\u0E01\u0E21\u0E32\u0E40\u0E14\u0E47\u0E14\u0E02\u0E32\u0E14 \u0E41\u0E2A\u0E14\u0E07\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E04\u0E48\u0E32\u0E17\u0E35\u0E48\u0E1B\u0E34\u0E14\u0E1A\u0E31\u0E07\u0E41\u0E25\u0E49\u0E27
           \u0E40\u0E1E\u0E23\u0E32\u0E30 log \u0E02\u0E2D\u0E07 CI \u0E2D\u0E22\u0E39\u0E48\u0E19\u0E32\u0E19\u0E01\u0E27\u0E48\u0E32\u0E44\u0E1F\u0E25\u0E4C\u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E2A\u0E41\u0E01\u0E19\u0E40\u0E2A\u0E35\u0E22\u0E2D\u0E35\u0E01
+          \u0E02\u0E49\u0E2D\u0E1A\u0E31\u0E07\u0E04\u0E31\u0E1A\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19\u0E19\u0E35\u0E49\u0E43\u0E0A\u0E49\u0E01\u0E31\u0E1A\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C SARIF \u0E14\u0E49\u0E27\u0E22
 `;
 function main() {
   const argv = process.argv.slice(2);
@@ -9161,6 +9989,12 @@ function main() {
       return commandScan(flags);
     case "baseline":
       return commandBaseline(flags);
+    case "ropa":
+      return commandRopa(flags);
+    case "semgrep":
+      return commandSemgrep(flags);
+    case "export":
+      return commandExport(flags);
     case "help":
     case "--help":
     case "-h":
@@ -9248,20 +10082,23 @@ function commandSync(flags, readOnly) {
   const errors = result.problems.filter((p) => p.level === "error");
   const warnings = result.problems.filter((p) => p.level === "warning");
   const changed = result.nextText !== result.previousText;
-  if (flags.json) {
-    process.stdout.write(
+  if (flags.format === "sarif") {
+    emit(statusToSarif(result.catalog.fields, result.problems, VERSION), flags);
+  } else if (flags.format === "json") {
+    emit(
       `${JSON.stringify(
         { summary, changes: result.changes, problems: result.problems, changed },
         null,
         2
       )}
-`
+`,
+      flags
     );
   }
   if (!readOnly && !flags.check && changed) {
     writeFileSync(result.catalogPath, result.nextText, "utf8");
   }
-  if (!flags.json) {
+  if (flags.format === "text") {
     report(result, summary, errors, warnings, changed, readOnly, flags);
   }
   if (errors.length > 0) process.exit(1);
@@ -9372,12 +10209,20 @@ function report(result, summary, errors, warnings, changed, readOnly, flags) {
 }
 function commandScan(flags) {
   const ignore = [...loadConfig(flags.root).scan.ignore, ...flags.ignore];
-  const all = collectFiles(flags.root, flags.paths);
+  const collected = collectFiles(flags.root, flags.paths);
+  if (collected.unresolved.length > 0) {
+    fail(`\u0E44\u0E21\u0E48\u0E21\u0E35\u0E44\u0E1F\u0E25\u0E4C\u0E43\u0E2B\u0E49\u0E2A\u0E41\u0E01\u0E19\u0E17\u0E35\u0E48 ${collected.unresolved.join(", ")}`);
+  }
+  const all = collected.files;
   const files = all.filter((file) => !matchesAny(file, ignore));
   const ignored = all.length - files.length;
   const { findings, scanned, skipped } = scanFiles(flags.root, files, flags.minConfidence);
-  if (flags.json) {
-    process.stdout.write(
+  if (flags.format === "sarif") {
+    emit(scanToSarif(findings, VERSION), flags);
+    process.exit(findings.length > 0 ? 1 : 0);
+  }
+  if (flags.format === "json") {
+    emit(
       `${JSON.stringify(
         {
           scanned,
@@ -9396,7 +10241,8 @@ function commandScan(flags) {
         null,
         2
       )}
-`
+`,
+      flags
     );
     process.exit(findings.length > 0 ? 1 : 0);
   }
@@ -9434,6 +10280,103 @@ ${green("\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2
 ${red("\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E08\u0E23\u0E34\u0E07\u0E43\u0E19\u0E44\u0E1F\u0E25\u0E4C")} ${findings.length} \u0E08\u0E38\u0E14 \u2014 \u0E22\u0E49\u0E32\u0E22\u0E2D\u0E2D\u0E01\u0E2B\u0E23\u0E37\u0E2D\u0E41\u0E17\u0E19\u0E14\u0E49\u0E27\u0E22\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E21\u0E21\u0E15\u0E34
 `);
   process.exit(1);
+}
+function emit(text, flags) {
+  if (flags.out === void 0) {
+    process.stdout.write(text);
+    return;
+  }
+  writeFileSync(flags.out, text, "utf8");
+  process.stderr.write(`${green("\u0E40\u0E02\u0E35\u0E22\u0E19\u0E41\u0E25\u0E49\u0E27")} ${flags.out}
+`);
+}
+function commandRopa(flags) {
+  const result = run(flags);
+  const generatedOn = today();
+  const ropa = buildRopa(result.catalog, generatedOn);
+  const target = flags.out ?? join4(flags.root, "arak-ropa.xlsx");
+  writeFileSync(target, buildXlsx(ropa.sheets));
+  const out = process.stdout;
+  out.write(`${green("\u0E40\u0E02\u0E35\u0E22\u0E19\u0E41\u0E25\u0E49\u0E27")} ${target}
+`);
+  out.write(
+    `${dim("\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C")} ${ropa.purposes} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23  ${dim("\u0E1F\u0E34\u0E25\u0E14\u0E4C")} ${ropa.fields} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23  ${dim("\u0E13 \u0E27\u0E31\u0E19\u0E17\u0E35\u0E48")} ${generatedOn}
+`
+  );
+  if (ropa.purposes === 0) {
+    out.write(
+      `
+${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E43\u0E19\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01")} \u2014 \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39 \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32
+${dim("\u0E40\u0E15\u0E34\u0E21 purposes \u0E43\u0E19")} ${result.config.catalog} ${dim("\u0E01\u0E48\u0E2D\u0E19")}
+`
+    );
+    process.exit(1);
+  }
+  if (ropa.undecided > 0) {
+    out.write(
+      `
+${yellow("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A")} \u2014 \u0E40\u0E2B\u0E25\u0E37\u0E2D ${ropa.undecided} \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19
+${dim("\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E40\u0E2B\u0E25\u0E48\u0E32\u0E19\u0E35\u0E49\u0E1B\u0E23\u0E32\u0E01\u0E0F\u0E43\u0E19\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E41\u0E25\u0E49\u0E27\u0E20\u0E32\u0E22\u0E43\u0E15\u0E49\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E1C\u0E39\u0E01\u0E01\u0E31\u0E1A\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E43\u0E14")}
+${dim("\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19\u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A\u0E14\u0E49\u0E27\u0E22 arak status \u0E41\u0E25\u0E49\u0E27\u0E2D\u0E2D\u0E01\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E43\u0E2B\u0E21\u0E48\u0E01\u0E48\u0E2D\u0E19\u0E19\u0E33\u0E44\u0E1B\u0E43\u0E0A\u0E49\u0E08\u0E23\u0E34\u0E07")}
+`
+    );
+    process.exit(1);
+  }
+  out.write(`
+${green("\u0E04\u0E23\u0E1A\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E32 39")} \u2014 \u0E17\u0E38\u0E01\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E41\u0E25\u0E30\u0E1C\u0E39\u0E01\u0E01\u0E31\u0E1A\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E41\u0E25\u0E49\u0E27
+`);
+  process.exit(0);
+}
+function commandSemgrep(flags) {
+  const result = run(flags);
+  const built = buildSemgrep(result.catalog);
+  if (built.rules === 0) {
+    process.stderr.write(
+      `${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27")} \u2014 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E43\u0E2B\u0E49\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E01\u0E0E \u0E25\u0E2D\u0E07 arak status \u0E01\u0E48\u0E2D\u0E19
+`
+    );
+    process.exit(1);
+  }
+  emit(built.yaml, flags);
+  const note = process.stderr;
+  note.write(
+    `${dim("\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E01\u0E0E")} ${built.rules} \u0E02\u0E49\u0E2D ${dim("\u0E04\u0E23\u0E2D\u0E1A\u0E1F\u0E34\u0E25\u0E14\u0E4C")} ${built.covered} ${dim("\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23")}
+`
+  );
+  if (built.uncovered > 0) {
+    note.write(
+      `${yellow("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E01\u0E0E\u0E04\u0E38\u0E49\u0E21")} ${built.uncovered} \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19 \u2014 \u0E01\u0E0E\u0E04\u0E23\u0E2D\u0E1A\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E2A\u0E34\u0E48\u0E07\u0E17\u0E35\u0E48\u0E41\u0E04\u0E15\u0E15\u0E32\u0E25\u0E47\u0E2D\u0E01\u0E23\u0E39\u0E49\u0E08\u0E31\u0E01
+`
+    );
+  }
+  process.exit(0);
+}
+function commandExport(flags) {
+  if (flags.format !== "fideslang") {
+    fail("export \u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A --format fideslang \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19\u0E43\u0E19\u0E15\u0E2D\u0E19\u0E19\u0E35\u0E49");
+  }
+  const result = run(flags);
+  const exported = exportFideslang(result.catalog, { systemName: basename(flags.root) });
+  emit(exported.yaml, flags);
+  const note = process.stderr;
+  if (exported.approximations.length > 0) {
+    note.write(
+      `${yellow("\u0E40\u0E17\u0E35\u0E22\u0E1A\u0E44\u0E14\u0E49\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07")} ${exported.approximations.length} \u0E2B\u0E21\u0E27\u0E14 \u2014 Fideslang \u0E40\u0E02\u0E35\u0E22\u0E19\u0E23\u0E2D\u0E1A GDPR \u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48 \u0E21.26
+`
+    );
+    for (const item of exported.approximations) {
+      note.write(`  ${dim(pad(item.category, 20))} \u2192 ${item.fides}
+    ${dim(item.note)}
+`);
+    }
+  }
+  if (exported.undecided > 0) {
+    note.write(
+      `${yellow("\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E2A\u0E48\u0E07\u0E2D\u0E2D\u0E01")} ${exported.undecided} \u0E1F\u0E34\u0E25\u0E14\u0E4C\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19 \u2014 ${dim("\u0E1B\u0E25\u0E32\u0E22\u0E17\u0E32\u0E07\u0E08\u0E30\u0E44\u0E21\u0E48\u0E23\u0E39\u0E49\u0E27\u0E48\u0E32\u0E21\u0E35\u0E2D\u0E22\u0E39\u0E48 \u0E2D\u0E22\u0E48\u0E32\u0E16\u0E37\u0E2D\u0E27\u0E48\u0E32\u0E1C\u0E25\u0E19\u0E35\u0E49\u0E04\u0E23\u0E1A")}
+`
+    );
+  }
+  process.exit(0);
 }
 function formatProblem(problem, color) {
   const where = problem.file !== void 0 ? dim(` ${problem.file}:${problem.line ?? 0}`) : "";

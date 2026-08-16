@@ -2091,7 +2091,7 @@ var require_stringify = __commonJS({
         props.push(doc.directives.tagString(tag));
       return props.join(" ");
     }
-    function stringify(item, ctx, onComment, onChompKeep) {
+    function stringify2(item, ctx, onComment, onChompKeep) {
       if (identity.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
       if (identity.isAlias(item)) {
@@ -2120,7 +2120,7 @@ var require_stringify = __commonJS({
 ${ctx.indent}${str}`;
     }
     exports.createStringifyContext = createStringifyContext;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -2130,7 +2130,7 @@ var require_stringifyPair = __commonJS({
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
       const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
@@ -2152,7 +2152,7 @@ var require_stringifyPair = __commonJS({
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      let str = stringify2.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
       if (!explicitKey && !ctx.inFlow && str.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
@@ -2204,7 +2204,7 @@ ${indent}:`;
         ctx.indent = ctx.indent.substring(2);
       }
       let valueCommentDone = false;
-      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
+      const valueStr = stringify2.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
       let ws = " ";
       if (keyComment || vsb || vcb) {
         ws = vsb ? "\n" : "";
@@ -2345,7 +2345,7 @@ var require_addPairToJSMap = __commonJS({
     "use strict";
     var log = require_log();
     var merge = require_merge();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var identity = require_identity();
     var toJS = require_toJS();
     function addPairToJSMap(ctx, map, { key, value }) {
@@ -2381,7 +2381,7 @@ var require_addPairToJSMap = __commonJS({
       if (typeof jsKey !== "object")
         return String(jsKey);
       if (identity.isNode(key) && ctx?.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        const strCtx = stringify2.createStringifyContext(ctx.doc, {});
         strCtx.anchors = /* @__PURE__ */ new Set();
         for (const node of ctx.anchors.keys())
           strCtx.anchors.add(node.anchor);
@@ -2448,12 +2448,12 @@ var require_stringifyCollection = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyCollection(collection, ctx, options) {
       const flow = ctx.inFlow ?? collection.flow;
-      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-      return stringify2(collection, ctx, options);
+      const stringify3 = flow ? stringifyFlowCollection : stringifyBlockCollection;
+      return stringify3(collection, ctx, options);
     }
     function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
       const { indent, options: { commentString } } = ctx;
@@ -2478,7 +2478,7 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str2 = stringify2.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
           str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
@@ -2545,7 +2545,7 @@ ${indent}${line}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str = stringify.stringify(item, itemCtx, () => comment = null);
+        let str = stringify2.stringify(item, itemCtx, () => comment = null);
         reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
         if (i < items.length - 1) {
           str += ",";
@@ -3906,7 +3906,7 @@ var require_stringifyDocument = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
       const lines = [];
@@ -3921,7 +3921,7 @@ var require_stringifyDocument = __commonJS({
       }
       if (hasDirectives)
         lines.push("---");
-      const ctx = stringify.createStringifyContext(doc, options);
+      const ctx = stringify2.createStringifyContext(doc, options);
       const { commentString } = ctx.options;
       if (doc.commentBefore) {
         if (lines.length !== 1)
@@ -3943,7 +3943,7 @@ var require_stringifyDocument = __commonJS({
           contentComment = doc.contents.comment;
         }
         const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
-        let body = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
+        let body = stringify2.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
         if (contentComment)
           body += stringifyComment.lineComment(body, "", commentString(contentComment));
         if ((body[0] === "|" || body[0] === ">") && lines[lines.length - 1] === "---") {
@@ -3951,7 +3951,7 @@ var require_stringifyDocument = __commonJS({
         } else
           lines.push(body);
       } else {
-        lines.push(stringify.stringify(doc.contents, ctx));
+        lines.push(stringify2.stringify(doc.contents, ctx));
       }
       if (doc.directives?.docEnd) {
         if (doc.comment) {
@@ -6086,7 +6086,7 @@ var require_cst_scalar = __commonJS({
 var require_cst_stringify = __commonJS({
   "../../node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
-    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
+    var stringify2 = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
       switch (token.type) {
         case "block-scalar": {
@@ -6139,7 +6139,7 @@ var require_cst_stringify = __commonJS({
         res += stringifyToken(value);
       return res;
     }
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -7869,7 +7869,7 @@ var require_public_api = __commonJS({
       }
       return doc.toJS(Object.assign({ reviver: _reviver }, options));
     }
-    function stringify(value, replacer, options) {
+    function stringify2(value, replacer, options) {
       let _replacer = null;
       if (typeof replacer === "function" || Array.isArray(replacer)) {
         _replacer = replacer;
@@ -7894,7 +7894,7 @@ var require_public_api = __commonJS({
     exports.parse = parse;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument2;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -8230,10 +8230,181 @@ var init_catalog = __esm({
   }
 });
 
+// ../core/dist/fideslang.js
+function toFidesKey(value) {
+  const key = value.toLowerCase().replace(/[^a-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "");
+  return key === "" ? "arak_export" : key;
+}
+function exportFideslang(catalog, options) {
+  const systemKey = toFidesKey(options.systemName);
+  const approximations = /* @__PURE__ */ new Map();
+  const noteApproximation = (category) => {
+    const mapping = FIDESLANG_CATEGORIES[category];
+    if (mapping === void 0 || mapping.exact)
+      return;
+    approximations.set(category, {
+      category,
+      fides: mapping.fides,
+      note: mapping.note ?? ""
+    });
+  };
+  const collections = /* @__PURE__ */ new Map();
+  let undecided = 0;
+  for (const field of catalog.fields) {
+    if (field.status === "not-pii")
+      continue;
+    if (field.status !== "marked" || field.category === void 0) {
+      undecided += 1;
+      continue;
+    }
+    const mapping = FIDESLANG_CATEGORIES[field.category];
+    if (mapping === void 0)
+      continue;
+    noteApproximation(field.category);
+    const container = field.source.container;
+    let collection = collections.get(container);
+    if (collection === void 0) {
+      collection = { name: container, fields: [] };
+      collections.set(container, collection);
+    }
+    collection.fields.push({
+      name: field.source.field,
+      description: `${field.id} \u2014 \u0E08\u0E32\u0E01 ${field.source.file}:${field.source.line}`,
+      data_categories: [mapping.fides],
+      ...mapping.exact ? {} : { fides_meta: { arak_category: field.category, approximate: true } }
+    });
+  }
+  const dataset = {
+    fides_key: `${systemKey}_dataset`,
+    name: options.systemName,
+    description: "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E08\u0E32\u0E01 pii-catalog.yaml \u0E02\u0E2D\u0E07 Arak \u2014 \u0E2D\u0E22\u0E48\u0E32\u0E41\u0E01\u0E49\u0E44\u0E1F\u0E25\u0E4C\u0E19\u0E35\u0E49\u0E14\u0E49\u0E27\u0E22\u0E21\u0E37\u0E2D",
+    collections: [...collections.values()].sort((a, b) => a.name.localeCompare(b.name))
+  };
+  const declarations = catalog.purposes.map((purpose) => {
+    const fields = catalog.fields.filter((f) => f.status === "marked" && (f.purposes ?? []).includes(purpose.key));
+    const categories = [
+      ...new Set(fields.map((f) => FIDESLANG_CATEGORIES[f.category]?.fides).filter((c) => c !== void 0))
+    ].sort();
+    const basis = FIDESLANG_LEGAL_BASIS[purpose.legalBasis];
+    return {
+      name: purpose.label,
+      data_categories: categories,
+      // Fides บังคับให้มี data_use แต่ Arak ไม่เก็บ data use ตามอนุกรมวิธานของ Fideslang
+      // จะเดาให้ก็ผิดหลักของโครงการนี้ จึงใส่คีย์รากไว้ให้คนเลือกให้ละเอียดขึ้นเอง
+      data_use: "essential",
+      data_subjects: ["customer"],
+      legal_basis_for_processing: basis?.fides ?? "Legitimate interests",
+      retention_period: purpose.retention,
+      ...purpose.recipients === void 0 ? {} : { shared_with: purpose.recipients }
+    };
+  });
+  const system = {
+    fides_key: systemKey,
+    name: options.systemName,
+    system_type: "Application",
+    description: catalog.controller?.name ?? "",
+    ...catalog.controller?.contact === void 0 ? {} : { administrating_department: catalog.controller.contact },
+    privacy_declarations: declarations
+  };
+  const banner = "# \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E42\u0E14\u0E22 arak export --format fideslang \u2014 \u0E2D\u0E22\u0E48\u0E32\u0E41\u0E01\u0E49\u0E14\u0E49\u0E27\u0E22\u0E21\u0E37\u0E2D\n# \u0E41\u0E2B\u0E25\u0E48\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E04\u0E37\u0E2D pii-catalog.yaml \u0E41\u0E01\u0E49\u0E17\u0E35\u0E48\u0E19\u0E31\u0E48\u0E19\u0E41\u0E25\u0E49\u0E27\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E43\u0E2B\u0E21\u0E48\n#\n# data_use \u0E41\u0E25\u0E30 data_subjects \u0E22\u0E31\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E04\u0E48\u0E32\u0E15\u0E31\u0E49\u0E07\u0E15\u0E49\u0E19 \u0E40\u0E1E\u0E23\u0E32\u0E30 Arak \u0E44\u0E21\u0E48\u0E40\u0E01\u0E47\u0E1A\u0E2A\u0E2D\u0E07\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E35\u0E49\n# \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E04\u0E19\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E43\u0E2B\u0E49\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E02\u0E36\u0E49\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E40\u0E2D\u0E32\u0E44\u0E1B\u0E43\u0E0A\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E08\u0E23\u0E34\u0E07\n\n";
+  return {
+    yaml: banner + (0, import_yaml2.stringify)({ dataset: [dataset], system: [system] }, { lineWidth: 0 }),
+    approximations: [...approximations.values()].sort((a, b) => a.category.localeCompare(b.category)),
+    undecided
+  };
+}
+var import_yaml2, FIDESLANG_CATEGORIES, FIDESLANG_LEGAL_BASIS, ALL_CATEGORIES;
+var init_fideslang = __esm({
+  "../core/dist/fideslang.js"() {
+    "use strict";
+    import_yaml2 = __toESM(require_dist(), 1);
+    init_types();
+    FIDESLANG_CATEGORIES = {
+      // หมวดทั่วไป
+      identity: { fides: "user.name", exact: true },
+      government_id: { fides: "user.government_id", exact: true },
+      contact: { fides: "user.contact", exact: true },
+      financial: { fides: "user.financial", exact: true },
+      location: { fides: "user.location", exact: true },
+      device: { fides: "user.device", exact: true },
+      behavioral: { fides: "user.behavior", exact: true },
+      credential: { fides: "user.authorization.credentials", exact: true },
+      employment: {
+        fides: "user.workplace",
+        exact: false,
+        note: "user.workplace \u0E2B\u0E21\u0E32\u0E22\u0E16\u0E36\u0E07\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23\u0E17\u0E35\u0E48\u0E2A\u0E31\u0E07\u0E01\u0E31\u0E14 \u0E2A\u0E48\u0E27\u0E19 employment \u0E02\u0E2D\u0E07 Arak \u0E01\u0E27\u0E49\u0E32\u0E07\u0E01\u0E27\u0E48\u0E32 \u0E23\u0E27\u0E21\u0E40\u0E07\u0E34\u0E19\u0E40\u0E14\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E30\u0E2A\u0E31\u0E0D\u0E0D\u0E32\u0E08\u0E49\u0E32\u0E07\u0E14\u0E49\u0E27\u0E22"
+      },
+      media: {
+        fides: "user.content",
+        exact: false,
+        note: "user.content \u0E04\u0E23\u0E2D\u0E1A\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E2A\u0E23\u0E49\u0E32\u0E07 \u0E2A\u0E48\u0E27\u0E19 media \u0E02\u0E2D\u0E07 Arak \u0E2B\u0E21\u0E32\u0E22\u0E16\u0E36\u0E07\u0E20\u0E32\u0E1E \u0E40\u0E2A\u0E35\u0E22\u0E07 \u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D \u0E17\u0E35\u0E48\u0E23\u0E30\u0E1A\u0E38\u0E15\u0E31\u0E27\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E44\u0E14\u0E49"
+      },
+      vehicle: {
+        fides: "user.government_id.vehicle_registration",
+        exact: false,
+        note: "Fideslang \u0E21\u0E35\u0E41\u0E15\u0E48\u0E17\u0E30\u0E40\u0E1A\u0E35\u0E22\u0E19\u0E23\u0E16\u0E43\u0E19\u0E10\u0E32\u0E19\u0E30\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E22\u0E32\u0E19\u0E1E\u0E32\u0E2B\u0E19\u0E30\u0E42\u0E14\u0E22\u0E15\u0E23\u0E07"
+      },
+      education: {
+        fides: "user.demographic",
+        exact: false,
+        note: "Fideslang \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E01\u0E32\u0E23\u0E28\u0E36\u0E01\u0E29\u0E32 \u0E08\u0E36\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E22\u0E31\u0E14\u0E25\u0E07 user.demographic \u0E0B\u0E36\u0E48\u0E07\u0E01\u0E27\u0E49\u0E32\u0E07\u0E01\u0E27\u0E48\u0E32\u0E21\u0E32\u0E01"
+      },
+      family: {
+        fides: "user.demographic.marital_status",
+        exact: false,
+        note: "\u0E15\u0E23\u0E07\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E2A\u0E16\u0E32\u0E19\u0E20\u0E32\u0E1E\u0E2A\u0E21\u0E23\u0E2A \u0E2A\u0E48\u0E27\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1A\u0E38\u0E04\u0E04\u0E25\u0E43\u0E19\u0E04\u0E23\u0E2D\u0E1A\u0E04\u0E23\u0E31\u0E27\u0E2D\u0E37\u0E48\u0E19 \u0E46 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E17\u0E35\u0E48\u0E25\u0E07\u0E43\u0E19 Fideslang"
+      },
+      // หมวดอ่อนไหวตามมาตรา 26
+      health: { fides: "user.health_and_medical", exact: true },
+      genetic: { fides: "user.health_and_medical.genetic", exact: true },
+      biometric: { fides: "user.biometric", exact: true },
+      criminal_record: { fides: "user.criminal_history", exact: true },
+      race_ethnicity: { fides: "user.demographic.race_ethnicity", exact: true },
+      political_opinion: { fides: "user.demographic.political_opinion", exact: true },
+      belief_religion: { fides: "user.demographic.religious_belief", exact: true },
+      sexual_behavior: {
+        fides: "user.demographic.sexual_orientation",
+        exact: false,
+        note: "\u0E23\u0E2A\u0E19\u0E34\u0E22\u0E21\u0E17\u0E32\u0E07\u0E40\u0E1E\u0E28\u0E01\u0E31\u0E1A\u0E1E\u0E24\u0E15\u0E34\u0E01\u0E23\u0E23\u0E21\u0E17\u0E32\u0E07\u0E40\u0E1E\u0E28\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E2A\u0E34\u0E48\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19 \u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E04\u0E38\u0E49\u0E21\u0E04\u0E23\u0E2D\u0E07\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E2B\u0E25\u0E31\u0E07 Fideslang \u0E21\u0E35\u0E41\u0E15\u0E48\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E41\u0E23\u0E01"
+      },
+      disability: {
+        fides: "user.health_and_medical",
+        exact: false,
+        note: "Fideslang \u0E44\u0E21\u0E48\u0E41\u0E22\u0E01\u0E04\u0E27\u0E32\u0E21\u0E1E\u0E34\u0E01\u0E32\u0E23\u0E2D\u0E2D\u0E01\u0E08\u0E32\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E38\u0E02\u0E20\u0E32\u0E1E \u0E41\u0E15\u0E48\u0E21\u0E32\u0E15\u0E23\u0E32 26 \u0E23\u0E30\u0E1A\u0E38\u0E44\u0E27\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E04\u0E19\u0E25\u0E30\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23"
+      },
+      union: {
+        fides: "user.demographic",
+        exact: false,
+        note: "Fideslang \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2B\u0E21\u0E27\u0E14\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E20\u0E32\u0E1E\u0E2A\u0E2B\u0E20\u0E32\u0E1E\u0E41\u0E23\u0E07\u0E07\u0E32\u0E19\u0E40\u0E25\u0E22 \u0E17\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E48\u0E2D\u0E19\u0E44\u0E2B\u0E27\u0E17\u0E31\u0E49\u0E07\u0E43\u0E19 GDPR \u0E41\u0E25\u0E30\u0E21\u0E32\u0E15\u0E23\u0E32 26"
+      }
+    };
+    FIDESLANG_LEGAL_BASIS = {
+      consent: { fides: "Consent", exact: true },
+      contract: { fides: "Contract", exact: true },
+      legal_obligation: { fides: "Legal obligations of the controller", exact: true },
+      vital_interest: { fides: "Vital interests of the data subject", exact: true },
+      public_task: { fides: "Public interest", exact: true },
+      legitimate_interest: { fides: "Legitimate interests", exact: true },
+      research_archive: {
+        fides: "Legitimate interests",
+        exact: false,
+        note: "\u0E21\u0E32\u0E15\u0E23\u0E32 24(1) \u0E43\u0E2B\u0E49\u0E08\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38 \u0E27\u0E34\u0E08\u0E31\u0E22 \u0E41\u0E25\u0E30\u0E2A\u0E16\u0E34\u0E15\u0E34 \u0E40\u0E1B\u0E47\u0E19\u0E10\u0E32\u0E19\u0E41\u0E22\u0E01\u0E15\u0E48\u0E32\u0E07\u0E2B\u0E32\u0E01 \u0E2A\u0E48\u0E27\u0E19 GDPR \u0E16\u0E37\u0E2D\u0E40\u0E1B\u0E47\u0E19\u0E02\u0E49\u0E2D\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E20\u0E32\u0E22\u0E43\u0E15\u0E49\u0E10\u0E32\u0E19\u0E2D\u0E37\u0E48\u0E19"
+      }
+    };
+    ALL_CATEGORIES = [
+      ...GENERAL_CATEGORIES,
+      ...SENSITIVE_CATEGORIES
+    ];
+  }
+});
+
 // ../core/dist/index.js
 var dist_exports = {};
 __export(dist_exports, {
+  ALL_CATEGORIES: () => ALL_CATEGORIES,
   CATEGORY_LABELS: () => CATEGORY_LABELS,
+  FIDESLANG_CATEGORIES: () => FIDESLANG_CATEGORIES,
+  FIDESLANG_LEGAL_BASIS: () => FIDESLANG_LEGAL_BASIS,
   GENERAL_CATEGORIES: () => GENERAL_CATEGORIES,
   LEGAL_BASES: () => LEGAL_BASES,
   LEGAL_BASIS_LABELS: () => LEGAL_BASIS_LABELS,
@@ -8241,6 +8412,7 @@ __export(dist_exports, {
   SENSITIVE_CATEGORIES: () => SENSITIVE_CATEGORIES,
   applyBaseline: () => applyBaseline,
   emptyCatalog: () => emptyCatalog,
+  exportFideslang: () => exportFideslang,
   guessCategory: () => guessCategory,
   isKnownCategory: () => isKnownCategory,
   isSensitiveCategory: () => isSensitiveCategory,
@@ -8248,7 +8420,8 @@ __export(dist_exports, {
   reconcile: () => reconcile,
   serializeCatalog: () => serializeCatalog,
   starterCatalog: () => starterCatalog,
-  summarize: () => summarize
+  summarize: () => summarize,
+  toFidesKey: () => toFidesKey
 });
 var init_dist = __esm({
   "../core/dist/index.js"() {
@@ -8256,6 +8429,7 @@ var init_dist = __esm({
     init_types();
     init_reconcile();
     init_catalog();
+    init_fideslang();
     init_heuristic();
   }
 });
@@ -8594,7 +8768,7 @@ function loadConfig(root) {
   } catch {
     return defaultConfig(discoverPrismaSchemas(root));
   }
-  const raw = (0, import_yaml2.parse)(text);
+  const raw = (0, import_yaml3.parse)(text);
   const obj = raw ?? {};
   const sources = obj["sources"] ?? {};
   const prisma = Array.isArray(sources["prisma"]) ? sources["prisma"].map(String) : [];
@@ -8638,11 +8812,11 @@ function discoverPrismaSchemas(root) {
   walk(root, 0);
   return found.sort();
 }
-var import_yaml2, CONFIG_FILE, DEFAULT_CATALOG, SKIP_DIRS, MAX_DEPTH;
+var import_yaml3, CONFIG_FILE, DEFAULT_CATALOG, SKIP_DIRS, MAX_DEPTH;
 var init_config = __esm({
   "../cli/dist/config.js"() {
     "use strict";
-    import_yaml2 = __toESM(require_dist(), 1);
+    import_yaml3 = __toESM(require_dist(), 1);
     CONFIG_FILE = "arak.config.yaml";
     DEFAULT_CATALOG = "pii-catalog.yaml";
     SKIP_DIRS = /* @__PURE__ */ new Set([

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import {
   applyBaseline,
+  exportFideslang,
   isSensitiveCategory,
   serializeCatalog,
   starterCatalog,
@@ -19,10 +20,17 @@ import {
   serializeConfig,
 } from "./config.js";
 import { loadProject, ProjectError, today, type ProjectRun } from "./project.js";
+import { buildRopa } from "./ropa.js";
+import { scanToSarif, statusToSarif } from "./sarif.js";
 import { collectFiles, scanFiles } from "./scan.js";
+import { buildSemgrep } from "./semgrep.js";
 import { blue, bold, capped, dim, green, heading, pad, red, yellow } from "./ui.js";
+import { buildXlsx } from "./xlsx.js";
 
 const VERSION = "0.1.0";
+
+const FORMATS = ["text", "json", "sarif", "fideslang", "semgrep"] as const;
+type Format = (typeof FORMATS)[number];
 
 interface Flags {
   root: string;
@@ -37,6 +45,10 @@ interface Flags {
   ignore: string[];
   /** ให้ status นับหนี้เก่าเป็นความล้มเหลวด้วย */
   strict: boolean;
+  /** รูปแบบผลลัพธ์ */
+  format: Format;
+  /** ไฟล์ปลายทาง — ถ้าไม่ระบุจะพิมพ์ออก stdout ยกเว้นผลลัพธ์ที่เป็นไบนารี */
+  out?: string;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -50,6 +62,7 @@ function parseFlags(argv: string[]): Flags {
     paths: [],
     ignore: [],
     strict: false,
+    format: "text",
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -69,7 +82,26 @@ function parseFlags(argv: string[]): Flags {
         break;
       case "--json":
         flags.json = true;
+        flags.format = "json";
         break;
+      case "--format": {
+        const value = argv[i + 1];
+        if (value === undefined) fail(`--format ต้องตามด้วยหนึ่งใน ${FORMATS.join(" ")}`);
+        if (!(FORMATS as readonly string[]).includes(value)) {
+          fail(`ไม่รู้จักรูปแบบ "${value}" — เลือกจาก ${FORMATS.join(" ")}`);
+        }
+        flags.format = value as Format;
+        if (value === "json") flags.json = true;
+        i += 1;
+        break;
+      }
+      case "--out": {
+        const value = argv[i + 1];
+        if (value === undefined) fail("--out ต้องตามด้วยพาธไฟล์");
+        flags.out = isAbsolute(value) ? value : resolve(process.cwd(), value);
+        i += 1;
+        break;
+      }
       case "--no-heuristic":
         flags.heuristic = false;
         break;
@@ -114,6 +146,9 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
   arak status          รายงานสถานะโดยไม่แก้ไฟล์ (ใช้เป็นด่านใน CI)
   arak baseline        ยกฟิลด์ที่ยังไม่ตัดสินทั้งหมดไปเป็นหนี้เก่า เพื่อเริ่มนับจากศูนย์
   arak scan [paths]    หาข้อมูลส่วนบุคคลของจริงที่ปนอยู่ในไฟล์ เช่น seed หรือ fixture
+  arak ropa            ออกบันทึกรายการกิจกรรมการประมวลผลตามมาตรา 39 เป็น .xlsx
+  arak semgrep         สร้างกฎ Semgrep จากแคตตาล็อก เพื่อจับข้อมูลที่ไหลออกไป log
+  arak export          ส่งแคตตาล็อกออกเป็นรูปแบบที่เครื่องมืออื่นอ่านได้
 
 ตัวเลือก
   --root <path>        รากโปรเจกต์ (ค่าเริ่มต้นคือโฟลเดอร์ปัจจุบัน)
@@ -122,8 +157,16 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
   --strict             ใช้กับ status — ให้หนี้เก่าทำให้ตกด้วย
   --min-confidence <n> ใช้กับ scan — เกณฑ์ความเชื่อมั่น 0 ถึง 1 (ค่าเริ่มต้น 0.7)
   --ignore <glob>      ใช้กับ scan — ข้ามไฟล์ที่ตรงรูปแบบ ใส่ซ้ำได้
-  --json               พิมพ์ผลเป็น JSON
+  --format <fmt>       text (ค่าเริ่มต้น) · json · sarif · fideslang · semgrep
+  --out <path>         เขียนผลลงไฟล์แทนการพิมพ์ออกจอ
+  --json               ทางลัดของ --format json
   --force              ใช้กับ init — เขียนทับไฟล์เดิม
+
+รูปแบบผลลัพธ์
+  sarif      ใช้กับ status และ scan — อัปเข้า GitHub ด้วย codeql-action/upload-sarif
+             แล้วผลจะไปโผล่เป็นคอมเมนต์ในบรรทัดที่มีปัญหาใน pull request
+  fideslang  ใช้กับ export — อนุกรมวิธานกลางของ ethyca/fideslang (CC BY 4.0)
+             ทำให้แคตตาล็อกไหลเข้า Fides, DataHub และ OpenMetadata ได้
 
 รหัสจบการทำงาน
   0  ผ่าน
@@ -132,6 +175,7 @@ const HELP = `${bold("arak")} — มาร์กข้อมูลส่วน�
 
 หมายเหตุ  scan จะไม่พิมพ์ค่าจริงออกมาเด็ดขาด แสดงเฉพาะค่าที่ปิดบังแล้ว
           เพราะ log ของ CI อยู่นานกว่าไฟล์ที่ถูกสแกนเสียอีก
+          ข้อบังคับเดียวกันนี้ใช้กับผลลัพธ์ SARIF ด้วย
 `;
 
 function main(): void {
@@ -150,6 +194,12 @@ function main(): void {
       return commandScan(flags);
     case "baseline":
       return commandBaseline(flags);
+    case "ropa":
+      return commandRopa(flags);
+    case "semgrep":
+      return commandSemgrep(flags);
+    case "export":
+      return commandExport(flags);
     case "help":
     case "--help":
     case "-h":
@@ -241,13 +291,16 @@ function commandSync(flags: Flags, readOnly: boolean): void {
   const warnings = result.problems.filter((p) => p.level === "warning");
   const changed = result.nextText !== result.previousText;
 
-  if (flags.json) {
-    process.stdout.write(
+  if (flags.format === "sarif") {
+    emit(statusToSarif(result.catalog.fields, result.problems, VERSION), flags);
+  } else if (flags.format === "json") {
+    emit(
       `${JSON.stringify(
         { summary, changes: result.changes, problems: result.problems, changed },
         null,
         2,
       )}\n`,
+      flags,
     );
   }
 
@@ -255,7 +308,7 @@ function commandSync(flags: Flags, readOnly: boolean): void {
     writeFileSync(result.catalogPath, result.nextText, "utf8");
   }
 
-  if (!flags.json) {
+  if (flags.format === "text") {
     report(result, summary, errors, warnings, changed, readOnly, flags);
   }
 
@@ -375,13 +428,26 @@ function report(
 
 function commandScan(flags: Flags): void {
   const ignore = [...loadConfig(flags.root).scan.ignore, ...flags.ignore];
-  const all = collectFiles(flags.root, flags.paths);
+  const collected = collectFiles(flags.root, flags.paths);
+
+  // พาธที่สั่งมาแล้วไม่มีอยู่จริงคือการเรียกใช้ผิด ไม่ใช่ผลลัพธ์ "สะอาด"
+  // ถ้าปล่อยผ่านเป็นรหัส 0 ด่าน CI ที่เขียน `arak scan src/` ผิดพาธจะเขียวตลอดไป
+  if (collected.unresolved.length > 0) {
+    fail(`ไม่มีไฟล์ให้สแกนที่ ${collected.unresolved.join(", ")}`);
+  }
+
+  const all = collected.files;
   const files = all.filter((file) => !matchesAny(file, ignore));
   const ignored = all.length - files.length;
   const { findings, scanned, skipped } = scanFiles(flags.root, files, flags.minConfidence);
 
-  if (flags.json) {
-    process.stdout.write(
+  if (flags.format === "sarif") {
+    emit(scanToSarif(findings, VERSION), flags);
+    process.exit(findings.length > 0 ? 1 : 0);
+  }
+
+  if (flags.format === "json") {
+    emit(
       `${JSON.stringify(
         {
           scanned,
@@ -400,6 +466,7 @@ function commandScan(flags: Flags): void {
         null,
         2,
       )}\n`,
+      flags,
     );
     process.exit(findings.length > 0 ? 1 : 0);
   }
@@ -435,6 +502,110 @@ function commandScan(flags: Flags): void {
   }
   out.write(`\n${red("พบข้อมูลจริงในไฟล์")} ${findings.length} จุด — ย้ายออกหรือแทนด้วยข้อมูลสมมติ\n`);
   process.exit(1);
+}
+
+/**
+ * ส่งผลลัพธ์ที่เป็นข้อความออกไป
+ *
+ * ข้อความยืนยันไปทาง stderr เสมอ เพื่อให้ `arak status --format sarif > out.sarif`
+ * ได้ไฟล์ที่ parse ได้จริง ไม่ใช่ไฟล์ที่มีบรรทัดภาษาคนปนอยู่ข้างบน
+ */
+function emit(text: string, flags: Flags): void {
+  if (flags.out === undefined) {
+    process.stdout.write(text);
+    return;
+  }
+  writeFileSync(flags.out, text, "utf8");
+  process.stderr.write(`${green("เขียนแล้ว")} ${flags.out}\n`);
+}
+
+function commandRopa(flags: Flags): void {
+  const result = run(flags);
+  const generatedOn = today();
+  const ropa = buildRopa(result.catalog, generatedOn);
+  const target = flags.out ?? join(flags.root, "arak-ropa.xlsx");
+
+  writeFileSync(target, buildXlsx(ropa.sheets));
+
+  const out = process.stdout;
+  out.write(`${green("เขียนแล้ว")} ${target}\n`);
+  out.write(
+    `${dim("วัตถุประสงค์")} ${ropa.purposes} รายการ  ${dim("ฟิลด์")} ${ropa.fields} รายการ  ${dim("ณ วันที่")} ${generatedOn}\n`,
+  );
+
+  if (ropa.purposes === 0) {
+    out.write(
+      `\n${yellow("ยังไม่มีวัตถุประสงค์ในแคตตาล็อก")} — บันทึกตามมาตรา 39 ยังไม่มีเนื้อหา\n` +
+        `${dim("เติม purposes ใน")} ${result.config.catalog} ${dim("ก่อน")}\n`,
+    );
+    process.exit(1);
+  }
+
+  if (ropa.undecided > 0) {
+    // เอกสารยังถูกเขียนออกไป เพราะการมีร่างที่บอกตรง ๆ ว่าตรงไหนยังไม่เสร็จ
+    // มีประโยชน์กว่าการไม่มีอะไรเลย แต่รหัสจบต้องไม่บอกว่าผ่าน
+    out.write(
+      `\n${yellow("บันทึกยังไม่ครบ")} — เหลือ ${ropa.undecided} ฟิลด์ที่ยังไม่ถูกตัดสิน\n` +
+        `${dim("ฟิลด์เหล่านี้ปรากฏในเอกสารแล้วภายใต้หัวข้อ ยังไม่ได้ผูกกับวัตถุประสงค์ใด")}\n` +
+        `${dim("ปิดงานให้ครบด้วย arak status แล้วออกเอกสารใหม่ก่อนนำไปใช้จริง")}\n`,
+    );
+    process.exit(1);
+  }
+
+  out.write(`\n${green("ครบตามมาตรา 39")} — ทุกฟิลด์ถูกตัดสินและผูกกับวัตถุประสงค์แล้ว\n`);
+  process.exit(0);
+}
+
+function commandSemgrep(flags: Flags): void {
+  const result = run(flags);
+  const built = buildSemgrep(result.catalog);
+
+  if (built.rules === 0) {
+    process.stderr.write(
+      `${yellow("ยังไม่มีฟิลด์ที่ตัดสินแล้ว")} — ไม่มีอะไรให้สร้างกฎ ลอง arak status ก่อน\n`,
+    );
+    process.exit(1);
+  }
+
+  emit(built.yaml, flags);
+
+  const note = process.stderr;
+  note.write(
+    `${dim("สร้างกฎ")} ${built.rules} ข้อ ${dim("ครอบฟิลด์")} ${built.covered} ${dim("รายการ")}\n`,
+  );
+  if (built.uncovered > 0) {
+    note.write(
+      `${yellow("ยังไม่มีกฎคุ้ม")} ${built.uncovered} ฟิลด์ที่ยังไม่ถูกตัดสิน — กฎครอบเฉพาะสิ่งที่แคตตาล็อกรู้จัก\n`,
+    );
+  }
+  process.exit(0);
+}
+
+function commandExport(flags: Flags): void {
+  if (flags.format !== "fideslang") {
+    fail("export รองรับ --format fideslang เท่านั้นในตอนนี้");
+  }
+
+  const result = run(flags);
+  const exported = exportFideslang(result.catalog, { systemName: basename(flags.root) });
+  emit(exported.yaml, flags);
+
+  const note = process.stderr;
+  if (exported.approximations.length > 0) {
+    note.write(
+      `${yellow("เทียบได้ไม่ตรง")} ${exported.approximations.length} หมวด — Fideslang เขียนรอบ GDPR ไม่ใช่ ม.26\n`,
+    );
+    for (const item of exported.approximations) {
+      note.write(`  ${dim(pad(item.category, 20))} → ${item.fides}\n    ${dim(item.note)}\n`);
+    }
+  }
+  if (exported.undecided > 0) {
+    note.write(
+      `${yellow("ไม่ได้ส่งออก")} ${exported.undecided} ฟิลด์ที่ยังไม่ถูกตัดสิน — ` +
+        `${dim("ปลายทางจะไม่รู้ว่ามีอยู่ อย่าถือว่าผลนี้ครบ")}\n`,
+    );
+  }
+  process.exit(0);
 }
 
 function formatProblem(problem: Problem, color: (s: string) => string): string {

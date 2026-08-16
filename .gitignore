@@ -1,5 +1,7 @@
 node_modules/
 dist/
+build/
+.next/
 *.tsbuildinfo
 coverage/
 .DS_Store
@@ -7,3 +9,25 @@ Thumbs.db
 
 # scratch space for trying the CLI against other repos
 .scratch/
+
+# generated code
+src/generated/
+**/src/generated/
+
+# secrets and credentials — never commit
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*accessKeys*.csv
+credentials*.csv
+*credentials*.json
+*service-account*.json
+secrets.json
+*.secret.json
+id_rsa
+id_rsa.*
